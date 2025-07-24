@@ -1,254 +1,99 @@
--- Egg and mutation pet data
-local eggPets = {
-    ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
-    ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
-    ["Rare Egg"] = {"Orange Tabby", "Spotted Deer", "Pig", "Rooster", "Monkey"},
-    ["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"},
-    ["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"},
-    ["Bug Egg"] = {"Snail", "Giant Ant", "Caterpillar", "Praying Mantis", "Dragonfly"},
-    ["Night Egg"] = {"Hedgehog", "Mole", "Frog", "Echo Frog", "Night Owl", "Raccoon"},
-    ["Bee Egg"] = {"Bee", "Honey Bee", "Bear Bee", "Petal Bee", "Queen Bee"},
-    ["Anti‑Bee Egg"] = {"Wasp", "Tarantula Hawk", "Moth", "Butterfly", "Disco Bee"},
-    ["Common Summer Egg"] = {"Starfish", "Seagull", "Crab"},
-    ["Rare Summer Egg"] = {"Flamingo", "Toucan", "Sea Turtle", "Orangutan", "Seal"},
-    ["Paradise Egg"] = {"Ostrich", "Peacock", "Capybara", "Scarlet Macaw", "Mimic Octopus"},
-    ["Oasis Egg"] = {"Meerkat", "Sand Snake", "Axolotl", "Hyacinth Macaw", "Fennec Fox"},
-    ["Zen Egg"] = {"Shiba Inu", "Nihonzaru", "Tanuki", "Tanchozuru", "Kappa", "Kitsune"},
-    ["Dinosaur Egg"] = {"Raptor", "Triceratops", "Stegosaurus", "Pterodactyl", "Brontosaurus", "T-Rex"},
-    ["Primal Egg"] = {"Parasaurolophus", "Iguanodon", "Pachycephalosaurus", "Dilophosaurus", "Ankylosaurus", "Spinosaurus"},
-}
-
--- Mutation pets (adjust as needed)
-local mutationPets = {
-    ["Red Giant Ant"] = true,
-    ["Disco Bee"] = true,
-    ["Echo Frog"] = true,
-    ["Silver Monkey"] = true,
-    ["Tanchozuru"] = true,
-    ["Queen Bee"] = true,
-    ["T-Rex"] = true,
-    ["Spinosaurus"] = true,
-}
-
-local autoRandomize = false
-local espEnabled = true
-local allEggs = {}
-
+-- SERVICES
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
 
--- Create GUI
-local gui = Instance.new("ScreenGui")
-gui.Name = "EggESP"
-gui.ResetOnSpawn = false
-gui.Parent = playerGui
+-- EGG DATA
+local petTable = {
+    ["Common Egg"] = { "Dog", "Bunny", "Golden Lab" },
+    ["Uncommon Egg"] = { "Black Bunny", "Chicken", "Cat", "Deer" },
+    ["Rare Egg"] = { "Orange Tabby", "Spotted Deer" },
+    ["Epic Egg"] = { "Dalmatian", "Fox", "Snow Deer" },
+    ["Legendary Egg"] = { "Robot Dog", "Ice Fox", "Winter Bunny" },
+    ["Mythic Egg"] = { "Phoenix", "Unicorn", "Griffin" },
+    ["Ancient Egg"] = { "Dragon", "Saber Tooth", "Woolly Mammoth" },
+    ["Forest Egg"] = { "Tree Frog", "Mushroom Cat", "Leaf Deer" },
+    ["Ocean Egg"] = { "Shark", "Jellyfish", "Sea Turtle" },
+    ["Sky Egg"] = { "Eagle", "Cloud Bunny", "Storm Fox" },
+    ["Zen Egg"] = { "Zen Cat", "Zen Deer", "Zen Dragon" }
+}
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 160)
-frame.Position = UDim2.new(0.7, 0, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(40, 0, 60)
-frame.BackgroundTransparency = 0.2
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
-frame.Parent = gui
+-- MUTATION DATA
+local mutationTypes = {
+    "Shiny", "Inverted", "Frozen", "Windy", "Golden", "Mega", "Tiny", "Tranquil",
+    "IronSkin", "Radiant", "Rainbow", "Shocked", "Ascended"
+}
 
--- Title Label
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, 0, 0, 30)
-titleLabel.Position = UDim2.new(0, 0, 0, 0)
-titleLabel.BackgroundTransparency = 1
-titleLabel.TextColor3 = Color3.new(1, 1, 1)
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextSize = 20
-titleLabel.Text = "👁️Egg Randomizer"
-titleLabel.Parent = frame
+-- ESP FUNCTION
+local function createESP(part, text)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Adornee = part
+    billboard.Size = UDim2.new(0, 100, 0, 30)
+    billboard.StudsOffset = Vector3.new(0, 2, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Name = "EggESP"
 
--- Button creator
-local function createButton(text, yPos, color)
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.9, 0, 0, 40)
-	btn.Position = UDim2.new(0.05, 0, 0, yPos)
-	btn.BackgroundColor3 = color
-	btn.Text = text
-	btn.TextColor3 = Color3.new(1, 1, 1)
-	btn.TextSize = 16
-	btn.Font = Enum.Font.GothamBold
-	btn.Parent = frame
-	return btn
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.new(1, 1, 0)
+    label.TextStrokeTransparency = 0.5
+    label.TextScaled = true
+    label.Font = Enum.Font.SourceSansBold
+    label.Parent = billboard
+
+    billboard.Parent = part
 end
 
-local autoBtn = createButton("🔄 Auto Randomize: OFF", 40, Color3.fromRGB(80, 160, 80))
-local espBtn = createButton("👁️ ESP: ON", 90, Color3.fromRGB(100, 100, 100))
-
--- Attach ESP label to egg
-local function attachESP(model, part, petName)
-	local oldESP = part:FindFirstChild("ESPLabel")
-	if oldESP then oldESP:Destroy() end
-
-	local gui = Instance.new("BillboardGui")
-	gui.Name = "ESPLabel"
-	gui.Adornee = part
-	gui.Size = UDim2.new(0, 100, 0, 30)
-	gui.StudsOffset = Vector3.new(0, 3, 0)
-	gui.AlwaysOnTop = true
-	gui.MaxDistance = 10000
-	gui.Enabled = espEnabled
-
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, 0, 1, 0)
-	label.BackgroundTransparency = 1
-	label.TextColor3 = Color3.new(1, 1, 1)
-	label.Font = Enum.Font.GothamBold
-	label.TextScaled = true
-	label.Text = petName
-	label.Parent = gui
-
-	gui.Parent = part
-	return label, gui
+-- SCAN FOR EGGS
+local function addESPToEggs()
+    for _, egg in pairs(Workspace:GetDescendants()) do
+        if egg:IsA("Model") and petTable[egg.Name] and not egg:FindFirstChild("EggESP") then
+            local primaryPart = egg:FindFirstChild("Main") or egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart")
+            if primaryPart then
+                local pets = petTable[egg.Name]
+                local previewPet = pets[math.random(1, #pets)]
+                createESP(primaryPart, previewPet)
+            end
+        end
+    end
 end
 
--- Process egg model
-local function processEgg(obj)
-	local petList = eggPets[obj.Name]
-	if not petList then return end
+-- MUTATION VISUALIZER
+local function visualizeMutations()
+    local mutationArea = Workspace:FindFirstChild("MutationArea")
+    if not mutationArea then return end
 
-	local part = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
-	if not part then return end
-	if part:FindFirstChild("ESPLabel") then return end
+    for _, obj in pairs(mutationArea:GetChildren()) do
+        if obj:IsA("Model") and not obj:FindFirstChild("MutationTag") then
+            local mutation = mutationTypes[math.random(1, #mutationTypes)]
+            local tag = Instance.new("BillboardGui")
+            tag.Name = "MutationTag"
+            tag.Adornee = obj:FindFirstChildWhichIsA("BasePart")
+            tag.Size = UDim2.new(0, 120, 0, 30)
+            tag.StudsOffset = Vector3.new(0, 3, 0)
+            tag.AlwaysOnTop = true
 
-	local pet = petList[math.random(1, #petList)]
-	local label, gui = attachESP(obj, part, pet)
-	table.insert(allEggs, {model = obj, label = label, esp = gui, pets = petList})
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Text = mutation .. " Mutation"
+            label.TextColor3 = Color3.fromRGB(0, 255, 255)
+            label.TextStrokeTransparency = 0.5
+            label.TextScaled = true
+            label.Font = Enum.Font.GothamBold
+            label.Parent = tag
+
+            tag.Parent = obj
+        end
+    end
 end
 
--- Find eggs recursively
-local function findEggsRecursive(folder)
-	for _, obj in ipairs(folder:GetChildren()) do
-		if obj:IsA("Model") and eggPets[obj.Name] then
-			processEgg(obj)
-		elseif obj:IsA("Folder") or obj:IsA("Model") then
-			findEggsRecursive(obj)
-		end
-	end
-end
-
-findEggsRecursive(Workspace)
-
-Workspace.DescendantAdded:Connect(function(obj)
-	if obj:IsA("Model") and eggPets[obj.Name] then
-		task.wait(0.5)
-		processEgg(obj)
-	end
+-- LOOP TO UPDATE ESP + MUTATION VISUALS
+RunService.RenderStepped:Connect(function()
+    addESPToEggs()
+    visualizeMutations()
 end)
-
--- Randomize all eggs pets label
-local function randomizeAllEggs()
-	for _, egg in pairs(allEggs) do
-		egg.label.Text = egg.pets[math.random(1, #egg.pets)]
-	end
-end
-
--- Auto randomize cooldown timer
-local cooldownTime = 10
-local cooldownCounter = cooldownTime
-
-autoBtn.MouseButton1Click:Connect(function()
-	autoRandomize = not autoRandomize
-	if autoRandomize then
-		randomizeAllEggs() -- immediate randomize on toggle ON
-		cooldownCounter = cooldownTime
-		autoBtn.Text = "🔄 Auto Randomize: ON (" .. cooldownCounter .. "s)"
-	else
-		autoBtn.Text = "🔄 Auto Randomize: OFF"
-	end
-end)
-
-espBtn.MouseButton1Click:Connect(function()
-	espEnabled = not espEnabled
-	espBtn.Text = espEnabled and "👁️ ESP: ON" or "👁️ ESP: OFF"
-	for _, egg in pairs(allEggs) do
-		if egg.esp then egg.esp.Enabled = espEnabled end
-	end
-
-	-- Also toggle Mutation ESP visibility
-	for _, gui in pairs(Workspace:GetDescendants()) do
-		if gui:IsA("BillboardGui") and gui.Name == "MutationESP" then
-			gui.Enabled = espEnabled
-		end
-	end
-end)
-
--- Auto randomize loop with cooldown and countdown
-task.spawn(function()
-	while true do
-		if autoRandomize then
-			if cooldownCounter <= 0 then
-				randomizeAllEggs()
-				cooldownCounter = cooldownTime
-			end
-			autoBtn.Text = "🔄 Auto Randomize: ON (" .. cooldownCounter .. "s)"
-			cooldownCounter = cooldownCounter - 1
-		else
-			cooldownCounter = cooldownTime
-		end
-		task.wait(1)
-	end
-end)
-
--- Mutation Pets ESP in "Pet Mutations" area (next to Egg Shop)
-local mutationAreaName = "Pet Mutations"
-local mutationArea = Workspace:FindFirstChild(mutationAreaName)
-if not mutationArea then
-	warn("Mutation area '" .. mutationAreaName .. "' not found in Workspace!")
-else
-	local function createMutationESP(petModel)
-		local part = petModel.PrimaryPart or petModel:FindFirstChildWhichIsA("BasePart")
-		if not part then return end
-		if part:FindFirstChild("MutationESP") then return end
-
-		local gui = Instance.new("BillboardGui")
-		gui.Name = "MutationESP"
-		gui.Adornee = part
-		gui.Size = UDim2.new(0, 150, 0, 40)
-		gui.StudsOffset = Vector3.new(0, 3, 0)
-		gui.AlwaysOnTop = true
-		gui.Enabled = espEnabled
-
-		local label = Instance.new("TextLabel")
-		label.BackgroundTransparency = 0.6
-		label.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-		label.TextColor3 = Color3.new(1, 1, 1)
-		label.Font = Enum.Font.GothamBold
-		label.TextScaled = true
-		label.Text = petModel.Name .. " (Mutant)"
-		label.Size = UDim2.new(1, 0, 1, 0)
-		label.Parent = gui
-
-		gui.Parent = part
-	end
-
-	-- Scan existing mutation pets
-	local function scanMutationPets()
-		for _, obj in ipairs(mutationArea:GetChildren()) do
-			if obj:IsA("Model") and mutationPets[obj.Name] then
-				createMutationESP(obj)
-			end
-		end
-	end
-
-	scanMutationPets()
-
-	-- Detect new mutation pets added dynamically
-	mutationArea.ChildAdded:Connect(function(child)
-		if child:IsA("Model") and mutationPets[child.Name] then
-			task.wait(0.3)
-			createMutationESP(child)
-		end
-	end)
-end
