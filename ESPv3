@@ -76,7 +76,7 @@ espBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Attach ESP to an egg model
+-- ESP creation
 local function attachESP(model, part, petName)
 	local oldESP = part:FindFirstChild("ESPLabel")
 	if oldESP then oldESP:Destroy() end
@@ -87,6 +87,8 @@ local function attachESP(model, part, petName)
 	gui.Size = UDim2.new(0, 100, 0, 30)
 	gui.StudsOffset = Vector3.new(0, 3, 0)
 	gui.AlwaysOnTop = true
+	gui.MaxDistance = 10000
+	gui.Enabled = espEnabled
 
 	local label = Instance.new("TextLabel", gui)
 	label.Size = UDim2.new(1, 0, 1, 0)
@@ -96,12 +98,10 @@ local function attachESP(model, part, petName)
 	label.TextScaled = true
 	label.Text = petName
 
-	gui.Enabled = espEnabled
 	gui.Parent = part
 	return label, gui
 end
 
--- Create ESP on a valid egg
 local function processEgg(obj)
 	local petList = eggPets[obj.Name]
 	if not petList then return end
@@ -115,13 +115,36 @@ local function processEgg(obj)
 	table.insert(allEggs, {model = obj, label = label, esp = gui, pets = petList})
 end
 
--- Initial scan for eggs
-for _, obj in ipairs(Workspace:GetChildren()) do
-	if obj:IsA("Model") and eggPets[obj.Name] then
-		processEgg(obj)
+-- Recursive search
+local function findEggsRecursive(folder)
+	for _, obj in ipairs(folder:GetChildren()) do
+		if obj:IsA("Model") and eggPets[obj.Name] then
+			processEgg(obj)
+		elseif obj:IsA("Folder") or obj:IsA("Model") then
+			findEggsRecursive(obj)
+		end
 	end
 end
 
--- Handle newly spawned eggs
-Workspace.ChildAdded:Connect(function(obj)
-	if obj
+-- Initial scan
+findEggsRecursive(Workspace)
+
+-- Detect new eggs
+Workspace.DescendantAdded:Connect(function(obj)
+	if obj:IsA("Model") and eggPets[obj.Name] then
+		task.wait(0.5)
+		processEgg(obj)
+	end
+end)
+
+-- Auto randomize loop
+task.spawn(function()
+	while true do
+		if autoRandomize then
+			for _, egg in pairs(allEggs) do
+				egg.label.Text = egg.pets[math.random(1, #egg.pets)]
+			end
+		end
+		task.wait(1)
+	end
+end)
