@@ -1,34 +1,104 @@
--- ✅ Pet Randomizer ESP UI (Working Mobile-Friendly Version) -- Put this LocalScript inside: StarterPlayer > StarterPlayerScripts
+-- ✅ Pet Randomizer ESP UI (Working Mobile-Friendly Version)
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 
-local Players = game:GetService("Players") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
-local player = Players.LocalPlayer local playerGui = player:WaitForChild("PlayerGui")
+-- 🐾 All egg → pet mappings
+local petTable = {
+    ["Common Egg"] = {"Golden Lab", "Dog", "Cat"},
+    ["Uncommon Egg"] = {"Shiba", "Parrot", "Mouse"},
+    ["Rare Egg"] = {"Penguin", "Goat", "Cow"},
+    ["Epic Egg"] = {"Fox", "Bear", "Flamingo"},
+    ["Legendary Egg"] = {"Lion", "Unicorn", "Dragon"},
+}
 
--- 🐾 All egg → pet mappings local petTable = { ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"}, ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"}, ["Rare Egg"] = {"Orange Tabby", "Spotted Deer", "Pig", "Rooster", "Monkey"}, ["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"}, ["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"}, ["Bug Egg"] = {"Snail", "Giant Ant", "Caterpillar", "Praying Mantis", "Dragonfly"}, ["Night Egg"] = {"Hedgehog", "Mole", "Frog", "Echo Frog", "Night Owl", "Raccoon"}, ["Bee Egg"] = {"Bee", "Honey Bee", "Bear Bee", "Petal Bee", "Queen Bee"}, ["Anti‑Bee Egg"] = {"Wasp", "Tarantula Hawk", "Moth", "Butterfly", "Disco Bee"}, ["Common Summer Egg"] = {"Starfish", "Seagull", "Crab"}, ["Rare Summer Egg"] = {"Flamingo", "Toucan", "Sea Turtle", "Orangutan", "Seal"}, ["Paradise Egg"] = {"Ostrich", "Peacock", "Capybara", "Scarlet Macaw", "Mimic Octopus"}, ["Oasis Egg"] = {"Meerkat", "Sand Snake", "Axolotl", "Hyacinth Macaw", "Fennec Fox"}, ["Zen Egg"] = {"Shiba Inu", "Nihonzaru", "Tanuki", "Tanchozuru", "Kappa", "Kitsune"}, ["Dinosaur Egg"] = {"Raptor", "Triceratops", "Stegosaurus", "Pterodactyl", "Brontosaurus", "T-Rex"}, ["Primal Egg"] = {"Parasaurolophus", "Iguanodon", "Pachycephalosaurus", "Dilophosaurus", "Ankylosaurus", "Spinosaurus"}, }
+-- 🧠 ESP Labels Storage
+local eggLabels = {}
 
--- 🔁 Create or update ESP label local function setESP(egg, petName) local existing = egg:FindFirstChild("PetESP") if not existing then local gui = Instance.new("BillboardGui") gui.Name = "PetESP" gui.Size = UDim2.new(0, 200, 0, 50) gui.StudsOffset = Vector3.new(0, 3, 0) gui.AlwaysOnTop = true gui.Adornee = egg:FindFirstChildWhichIsA("BasePart") gui.Parent = egg
+-- 🔁 Auto toggle
+local autoReroll = false
 
-local label = Instance.new("TextLabel")
-    label.Name = "Label"
-    label.BackgroundTransparency = 1
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.TextStrokeTransparency = 0.5
-    label.Font = Enum.Font.GothamBold
-    label.TextScaled = true
-    label.Parent = gui
+-- 🎮 UI Setup
+local screenGui = Instance.new("ScreenGui", playerGui)
+screenGui.Name = "PetRandomizerUI"
+
+local frame = Instance.new("Frame", screenGui)
+frame.Position = UDim2.new(0, 10, 0, 10)
+frame.Size = UDim2.new(0, 200, 0, 60)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+frame.BackgroundTransparency = 0.2
+
+local title = Instance.new("TextLabel", frame)
+title.Text = "PET RANDOMIZER"
+title.Size = UDim2.new(1, 0, 0.5, 0)
+title.TextScaled = true
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+local toggle = Instance.new("TextButton", frame)
+toggle.Text = "AUTO REROLL: OFF"
+toggle.Position = UDim2.new(0, 0, 0.5, 0)
+toggle.Size = UDim2.new(1, 0, 0.5, 0)
+toggle.TextScaled = true
+toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+toggle.MouseButton1Click:Connect(function()
+    autoReroll = not autoReroll
+    toggle.Text = "AUTO REROLL: " .. (autoReroll and "ON" or "OFF")
+end)
+
+-- 🧲 Create or update ESP label for an egg
+local function updateLabel(egg)
+    local eggName = egg.Name
+    local possiblePets = petTable[eggName]
+    if not possiblePets then return end
+
+    local label = eggLabels[egg]
+    if not label then
+        local billboard = Instance.new("BillboardGui")
+        billboard.Size = UDim2.new(0, 100, 0, 40)
+        billboard.AlwaysOnTop = true
+        billboard.StudsOffset = Vector3.new(0, 2, 0)
+        billboard.Parent = egg
+
+        local textLabel = Instance.new("TextLabel", billboard)
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.TextScaled = true
+        textLabel.TextColor3 = Color3.new(1, 1, 1)
+        textLabel.Font = Enum.Font.GothamBold
+
+        eggLabels[egg] = textLabel
+        label = textLabel
+    end
+
+    local newPet = possiblePets[math.random(1, #possiblePets)]
+    label.Text = newPet
 end
 
-local gui = egg:FindFirstChild("PetESP")
-if gui then
-    gui.Label.Text = petName
+-- 🕵️ Find all eggs and apply/update ESP
+local function scanAndUpdateEggs()
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if petTable[obj.Name] then
+            updateLabel(obj)
+        end
+    end
 end
 
-end
+-- 🔄 Auto loop every 10 seconds
+task.spawn(function()
+    while true do
+        if autoReroll then
+            scanAndUpdateEggs()
+        end
+        task.wait(10)
+    end
+end)
 
--- 🔁 Reroll logic local function rerollAllEggs() for eggName, petList in pairs(petTable) do for _, egg in ipairs(Workspace:GetChildren()) do if egg:IsA("Model") and egg.Name == eggName then local petName = petList[math.random(1, #petList)] setESP(egg, petName) end end end end
-
--- 🧠 UI Creation local screenGui = Instance.new("ScreenGui", playerGui) screenGui.Name = "PetESPGui"
-
-local frame = Instance.new("Frame", screenGui) frame.Size = UDim2.new(0, 250, 0, 140) frame.Position = UDim2.new(0, 20, 0.25, 0) frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-
+-- Initial scan
+scanAndUpdateEggs()
