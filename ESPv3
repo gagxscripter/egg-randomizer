@@ -90,7 +90,7 @@ local function playSoundAt(egg)
     sound.Volume = 1
     sound.PlayOnRemove = true
     sound.Parent = egg
-    sound:Destroy() -- This triggers the sound
+    sound:Destroy() -- Triggers the sound
 end
 
 -- ✨ Update or create ESP for egg
@@ -148,4 +148,27 @@ local function updateLabel(egg)
 
     -- Animate fade-in
     local tIn1 = TweenService:Create(text, TweenInfo.new(0.3), {TextTransparency = 0})
-    local tIn2 = TweenService:Create(icon, TweenInfo.new(0.3), {Im
+    local tIn2 = TweenService:Create(icon, TweenInfo.new(0.3), {ImageTransparency = 0})
+    tIn1:Play()
+    tIn2:Play()
+end
+
+-- 🔁 Main Reroll Loop
+task.spawn(function()
+    while true do
+        task.wait(1)
+        if autoReroll then
+            currentCooldown -= 1
+            countdownLabel.Text = "Cooldown: " .. currentCooldown .. "s"
+            if currentCooldown <= 0 then
+                for _, egg in ipairs(Workspace:GetDescendants()) do
+                    if egg:IsA("Model") and petTable[egg.Name] then
+                        updateLabel(egg)
+                        playSoundAt(egg)
+                    end
+                end
+                currentCooldown = cooldownTime
+            end
+        end
+    end
+end)
