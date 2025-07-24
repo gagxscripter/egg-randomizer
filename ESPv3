@@ -2,7 +2,6 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Player and camera
 local player = Players.LocalPlayer
@@ -18,14 +17,13 @@ local petTable = {
 -- Create UI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "PetHatchDisplay"
-screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local petLabel = Instance.new("TextLabel")
-petLabel.Size = UDim2.new(0, 300, 0, 50)
-petLabel.Position = UDim2.new(0.5, -150, 0.85, 0)
-petLabel.BackgroundTransparency = 0.3
+petLabel.Size = UDim2.new(0, 400, 0, 60)
+petLabel.Position = UDim2.new(0.5, -200, 0.8, 0)
 petLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+petLabel.BackgroundTransparency = 0.2
 petLabel.BorderSizePixel = 0
 petLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 petLabel.Font = Enum.Font.GothamBold
@@ -34,33 +32,33 @@ petLabel.Text = ""
 petLabel.Visible = false
 petLabel.Parent = screenGui
 
--- Function to simulate hatching
+-- Function to hatch an egg and show UI
 local function hatchEgg(eggName)
 	local petList = petTable[eggName]
 	if not petList then return end
-	
+
 	local chosenPet = petList[math.random(1, #petList)]
-	
-	-- Show the pet name
+
+	-- Display pet name
 	petLabel.Text = "You hatched a: " .. chosenPet
 	petLabel.Visible = true
-	
-	-- Hide after few seconds
+
+	-- Hide after 3 seconds
 	task.delay(3, function()
 		petLabel.Visible = false
 	end)
 end
 
--- Simulate an egg hatch every 10 seconds (for demo/testing)
+-- Test loop: hatch a random egg every 10 seconds
 task.spawn(function()
 	while true do
 		task.wait(10)
-		
+
 		local eggNames = {}
 		for name in pairs(petTable) do
 			table.insert(eggNames, name)
 		end
-		
+
 		local randomEgg = eggNames[math.random(1, #eggNames)]
 		hatchEgg(randomEgg)
 	end
