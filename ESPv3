@@ -1,4 +1,6 @@
--- Egg and pet data
+-- DEBUG: Confirm script runs
+print("Egg ESP script running!")
+
 local eggPets = {
     ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
     ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
@@ -22,18 +24,21 @@ local autoRandomize = false
 local espEnabled = true
 local allEggs = {}
 
--- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
 local UIS = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
 -- GUI setup
-local gui = Instance.new("ScreenGui", playerGui)
+local gui = Instance.new("ScreenGui")
 gui.Name = "EggESP"
 gui.ResetOnSpawn = false
+gui.Parent = playerGui
+
+print("GUI created:", gui.Name)
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 300, 0, 120)
@@ -45,7 +50,7 @@ frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
 
--- Button creator
+-- Button creator function
 local function createButton(text, yPos, color)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0.9, 0, 0, 40)
@@ -62,7 +67,6 @@ end
 local autoBtn = createButton("🔄 Auto Randomize: OFF", 10, Color3.fromRGB(80, 160, 80))
 local espBtn = createButton("👁️ ESP: ON", 60, Color3.fromRGB(100, 100, 100))
 
--- Button actions
 autoBtn.MouseButton1Click:Connect(function()
 	autoRandomize = not autoRandomize
 	autoBtn.Text = autoRandomize and "🔄 Auto Randomize: ON" or "🔄 Auto Randomize: OFF"
@@ -76,7 +80,7 @@ espBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- ESP creation
+-- Attach ESP label
 local function attachESP(model, part, petName)
 	local oldESP = part:FindFirstChild("ESPLabel")
 	if oldESP then oldESP:Destroy() end
@@ -90,13 +94,14 @@ local function attachESP(model, part, petName)
 	gui.MaxDistance = 10000
 	gui.Enabled = espEnabled
 
-	local label = Instance.new("TextLabel", gui)
+	local label = Instance.new("TextLabel")
 	label.Size = UDim2.new(1, 0, 1, 0)
 	label.BackgroundTransparency = 1
 	label.TextColor3 = Color3.new(1, 1, 1)
 	label.Font = Enum.Font.GothamBold
 	label.TextScaled = true
 	label.Text = petName
+	label.Parent = gui
 
 	gui.Parent = part
 	return label, gui
@@ -111,14 +116,16 @@ local function processEgg(obj)
 	if part:FindFirstChild("ESPLabel") then return end
 
 	local pet = petList[math.random(1, #petList)]
+	print("Creating ESP for egg:", obj.Name, "pet:", pet)
 	local label, gui = attachESP(obj, part, pet)
 	table.insert(allEggs, {model = obj, label = label, esp = gui, pets = petList})
 end
 
--- Recursive search
+-- Recursive search for eggs (including nested folders)
 local function findEggsRecursive(folder)
 	for _, obj in ipairs(folder:GetChildren()) do
 		if obj:IsA("Model") and eggPets[obj.Name] then
+			print("Found egg model:", obj.Name)
 			processEgg(obj)
 		elseif obj:IsA("Folder") or obj:IsA("Model") then
 			findEggsRecursive(obj)
@@ -129,7 +136,7 @@ end
 -- Initial scan
 findEggsRecursive(Workspace)
 
--- Detect new eggs
+-- New egg detection
 Workspace.DescendantAdded:Connect(function(obj)
 	if obj:IsA("Model") and eggPets[obj.Name] then
 		task.wait(0.5)
