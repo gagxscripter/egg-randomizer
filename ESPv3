@@ -41,7 +41,7 @@ gui.Parent = playerGui
 print("GUI created:", gui.Name)
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 120)
+frame.Size = UDim2.new(0, 300, 0, 140)
 frame.Position = UDim2.new(0.7, 0, 0.3, 0)
 frame.BackgroundColor3 = Color3.fromRGB(40, 0, 60)
 frame.BackgroundTransparency = 0.2
@@ -49,6 +49,17 @@ frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
+
+-- Title Label
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 30)
+titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.TextColor3 = Color3.new(1, 1, 1)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 20
+titleLabel.Text = "👁️Egg Randomizer"
+titleLabel.Parent = frame
 
 -- Button creator function
 local function createButton(text, yPos, color)
@@ -64,8 +75,8 @@ local function createButton(text, yPos, color)
 	return btn
 end
 
-local autoBtn = createButton("🔄 Auto Randomize: OFF", 10, Color3.fromRGB(80, 160, 80))
-local espBtn = createButton("👁️ ESP: ON", 60, Color3.fromRGB(100, 100, 100))
+local autoBtn = createButton("🔄 Auto Randomize: OFF", 40, Color3.fromRGB(80, 160, 80))
+local espBtn = createButton("👁️ ESP: ON", 90, Color3.fromRGB(100, 100, 100))
 
 autoBtn.MouseButton1Click:Connect(function()
 	autoRandomize = not autoRandomize
@@ -144,7 +155,7 @@ Workspace.DescendantAdded:Connect(function(obj)
 	end
 end)
 
--- Auto randomize loop
+-- Auto randomize loop with 10 seconds cooldown
 task.spawn(function()
 	while true do
 		if autoRandomize then
@@ -152,6 +163,6 @@ task.spawn(function()
 				egg.label.Text = egg.pets[math.random(1, #egg.pets)]
 			end
 		end
-		task.wait(1)
+		task.wait(10)  -- 10 seconds cooldown here
 	end
 end)
