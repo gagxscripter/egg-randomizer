@@ -1,49 +1,161 @@
--- Services
+-- FULL SCRIPT: PET RANDOMIZER WITH ESP INSIDE EGGS
+
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
--- Pet table
+-- Your egg-to-pet data
 local petTable = {
-    ["Common Egg"] = {"Cat", "Dog", "Bunny"},
-    ["Zen Egg"] = {"Nihonzaru", "Shiba Inu", "Kappa"},
-    ["Rare Egg"] = {"Tiger", "Panda", "Wolf"},
-    ["Legendary Egg"] = {"Dragon", "Phoenix", "Unicorn"},
+    ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
+    ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
+    ["Rare Egg"] = {"Orange Tabby", "Spotted Deer", "Pig", "Rooster", "Monkey"},
+    ["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"},
+    ["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"},
+    ["Bug Egg"] = {"Snail", "Giant Ant", "Caterpillar", "Praying Mantis", "Dragonfly"},
+    ["Night Egg"] = {"Hedgehog", "Mole", "Frog", "Echo Frog", "Night Owl", "Raccoon"},
+    ["Bee Egg"] = {"Bee", "Honey Bee", "Bear Bee", "Petal Bee", "Queen Bee"},
+    ["Anti‑Bee Egg"] = {"Wasp", "Tarantula Hawk", "Moth", "Butterfly", "Disco Bee"},
+    ["Common Summer Egg"] = {"Starfish", "Seagull", "Crab"},
+    ["Rare Summer Egg"] = {"Flamingo", "Toucan", "Sea Turtle", "Orangutan", "Seal"},
+    ["Paradise Egg"] = {"Ostrich", "Peacock", "Capybara", "Scarlet Macaw", "Mimic Octopus"},
+    ["Oasis Egg"] = {"Meerkat", "Sand Snake", "Axolotl", "Hyacinth Macaw", "Fennec Fox"},
+    ["Zen Egg"] = {"Shiba Inu", "Nihonzaru", "Tanuki", "Tanchozuru", "Kappa", "Kitsune"},
+    ["Dinosaur Egg"] = {"Raptor", "Triceratops", "Stegosaurus", "Pterodactyl", "Brontosaurus", "T-Rex"},
+    ["Primal Egg"] = {"Parasaurolophus", "Iguanodon", "Pachycephalosaurus", "Dilophosaurus", "Ankylosaurus", "Spinosaurus"},
 }
 
--- UI Setup
-local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+local function getEggs()
+    local eggs = {}
+    for eggName, _ in pairs(petTable) do
+        for _, egg in ipairs(Workspace:GetDescendants()) do
+            if egg:IsA("Model") and egg.Name == eggName then
+                table.insert(eggs, egg)
+            end
+        end
+    end
+    return eggs
+end
+
+local function getRandomPet(eggName)
+    local pets = petTable[eggName]
+    if pets then
+        return pets[math.random(1, #pets)]
+    end
+    return "???"
+end
+
+local function createOrUpdateESP(eggModel, text)
+    local part = eggModel:FindFirstChildWhichIsA("BasePart")
+    if not part then return end
+
+    local gui = eggModel:FindFirstChild("PetESP")
+    if not gui then
+        gui = Instance.new("BillboardGui")
+        gui.Name = "PetESP"
+        gui.Size = UDim2.new(0, 200, 0, 50)
+        gui.AlwaysOnTop = true
+        gui.StudsOffset = Vector3.new(0, 3, 0)
+        gui.Adornee = part
+        gui.Parent = eggModel
+
+        local label = Instance.new("TextLabel")
+        label.Name = "Label"
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.TextScaled = true
+        label.Font = Enum.Font.GothamBold
+        label.TextStrokeTransparency = 0.5
+        label.Parent = gui
+    end
+
+    gui.Label.Text = "👁️ESP: " .. text
+end
+
+local function rerollAllEggs()
+    for _, egg in ipairs(getEggs()) do
+        createOrUpdateESP(egg, getRandomPet(egg.Name))
+    end
+end
+
+-- GUI
+local screenGui = Instance.new("ScreenGui", playerGui)
 screenGui.Name = "PetRandomizerUI"
 screenGui.ResetOnSpawn = false
 
--- Main Frame
-local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 250, 0, 200)
-mainFrame.Position = UDim2.new(0, 20, 0.2, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-mainFrame.BorderSizePixel = 2
-mainFrame.Name = "MainFrame"
-mainFrame.Active = true
-mainFrame.Draggable = true
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(0, 250, 0, 130)
+frame.Position = UDim2.new(0, 20, 0.25, 0)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
 
--- Title
-local title = Instance.new("TextLabel", mainFrame)
-title.Size = UDim2.new(1, -30, 0, 30)
-title.Position = UDim2.new(0, 5, 0, 0)
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundTransparency = 1
 title.Text = "👁️ PET RANDOMIZER"
-title.TextColor3 = Color3.fromRGB(255, 130, 0)
+title.TextColor3 = Color3.fromRGB(255, 170, 0)
 title.Font = Enum.Font.GothamBold
 title.TextScaled = true
 
--- Minimize Button
-local minimizeBtn = Instance.new("TextButton", mainFrame)
-minimizeBtn.Size = UDim2.new(0, 25, 0, 25)
-minimizeBtn.Position = UDim2.new(1, -30, 0, 2)
-minimizeBtn.Text = "-"
-minimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-minimizeBtn.TextColor3 = Color3.new(1, 1, 1)
-minimizeBtn.Font = Enum.Font.GothamBold
-min
+local toggleButton = Instance.new("TextButton", frame)
+toggleButton.Size = UDim2.new(1, -20, 0, 40)
+toggleButton.Position = UDim2.new(0, 10, 0, 35)
+toggleButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+toggleButton.Text = "AUTO REROLL: OFF"
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.TextScaled = true
+
+local manualButton = Instance.new("TextButton", frame)
+manualButton.Size = UDim2.new(1, -20, 0, 40)
+manualButton.Position = UDim2.new(0, 10, 0, 85)
+manualButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+manualButton.Text = "MANUAL REROLL"
+manualButton.TextColor3 = Color3.new(1, 1, 1)
+manualButton.Font = Enum.Font.GothamBold
+manualButton.TextScaled = true
+
+-- Minimize
+local collapse = false
+local collapseButton = Instance.new("TextButton", frame)
+collapseButton.Size = UDim2.new(0, 30, 0, 30)
+collapseButton.Position = UDim2.new(1, -30, 0, 0)
+collapseButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+collapseButton.Text = "-"
+collapseButton.TextColor3 = Color3.new(1, 1, 1)
+collapseButton.Font = Enum.Font.GothamBold
+collapseButton.TextScaled = true
+
+collapseButton.MouseButton1Click:Connect(function()
+    collapse = not collapse
+    toggleButton.Visible = not collapse
+    manualButton.Visible = not collapse
+    frame.Size = collapse and UDim2.new(0, 250, 0, 30) or UDim2.new(0, 250, 0, 130)
+    collapseButton.Text = collapse and "+" or "-"
+end)
+
+-- Toggle
+local autoOn = false
+toggleButton.MouseButton1Click:Connect(function()
+    autoOn = not autoOn
+    toggleButton.Text = autoOn and "AUTO REROLL: ON" or "AUTO REROLL: OFF"
+end)
+
+manualButton.MouseButton1Click:Connect(rerollAllEggs)
+
+-- Auto Loop
+task.spawn(function()
+    while true do
+        if autoOn then rerollAllEggs() end
+        task.wait(10)
+    end
+end)
+
+-- First run
+rerollAllEggs()
