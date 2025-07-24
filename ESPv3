@@ -1,133 +1,34 @@
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
+-- ✅ Pet Randomizer ESP UI (Working Mobile-Friendly Version) -- Put this LocalScript inside: StarterPlayer > StarterPlayerScripts
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local Players = game:GetService("Players") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService")
 
--- 🐣 Full egg-to-pet table
-local petTable = {
-    ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
-    ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
-    ["Rare Egg"] = {"Orange Tabby", "Spotted Deer", "Pig", "Rooster", "Monkey"},
-    ["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"},
-    ["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"},
-    ["Bug Egg"] = {"Snail", "Giant Ant", "Caterpillar", "Praying Mantis", "Dragonfly"},
-    ["Night Egg"] = {"Hedgehog", "Mole", "Frog", "Echo Frog", "Night Owl", "Raccoon"},
-    ["Bee Egg"] = {"Bee", "Honey Bee", "Bear Bee", "Petal Bee", "Queen Bee"},
-    ["Anti‑Bee Egg"] = {"Wasp", "Tarantula Hawk", "Moth", "Butterfly", "Disco Bee"},
-    ["Common Summer Egg"] = {"Starfish", "Seagull", "Crab"},
-    ["Rare Summer Egg"] = {"Flamingo", "Toucan", "Sea Turtle", "Orangutan", "Seal"},
-    ["Paradise Egg"] = {"Ostrich", "Peacock", "Capybara", "Scarlet Macaw", "Mimic Octopus"},
-    ["Oasis Egg"] = {"Meerkat", "Sand Snake", "Axolotl", "Hyacinth Macaw", "Fennec Fox"},
-    ["Zen Egg"] = {"Shiba Inu", "Nihonzaru", "Tanuki", "Tanchozuru", "Kappa", "Kitsune"},
-    ["Dinosaur Egg"] = {"Raptor", "Triceratops", "Stegosaurus", "Pterodactyl", "Brontosaurus", "T-Rex"},
-    ["Primal Egg"] = {"Parasaurolophus", "Iguanodon", "Pachycephalosaurus", "Dilophosaurus", "Ankylosaurus", "Spinosaurus"},
-}
+local player = Players.LocalPlayer local playerGui = player:WaitForChild("PlayerGui")
 
--- 🔁 Get eggs in Workspace
-local function getEggs()
-    local eggs = {}
-    for name, _ in pairs(petTable) do
-        for _, model in ipairs(Workspace:GetDescendants()) do
-            if model:IsA("Model") and model.Name == name then
-                table.insert(eggs, model)
-            end
-        end
-    end
-    return eggs
+-- 🐾 All egg → pet mappings local petTable = { ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"}, ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"}, ["Rare Egg"] = {"Orange Tabby", "Spotted Deer", "Pig", "Rooster", "Monkey"}, ["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"}, ["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"}, ["Bug Egg"] = {"Snail", "Giant Ant", "Caterpillar", "Praying Mantis", "Dragonfly"}, ["Night Egg"] = {"Hedgehog", "Mole", "Frog", "Echo Frog", "Night Owl", "Raccoon"}, ["Bee Egg"] = {"Bee", "Honey Bee", "Bear Bee", "Petal Bee", "Queen Bee"}, ["Anti‑Bee Egg"] = {"Wasp", "Tarantula Hawk", "Moth", "Butterfly", "Disco Bee"}, ["Common Summer Egg"] = {"Starfish", "Seagull", "Crab"}, ["Rare Summer Egg"] = {"Flamingo", "Toucan", "Sea Turtle", "Orangutan", "Seal"}, ["Paradise Egg"] = {"Ostrich", "Peacock", "Capybara", "Scarlet Macaw", "Mimic Octopus"}, ["Oasis Egg"] = {"Meerkat", "Sand Snake", "Axolotl", "Hyacinth Macaw", "Fennec Fox"}, ["Zen Egg"] = {"Shiba Inu", "Nihonzaru", "Tanuki", "Tanchozuru", "Kappa", "Kitsune"}, ["Dinosaur Egg"] = {"Raptor", "Triceratops", "Stegosaurus", "Pterodactyl", "Brontosaurus", "T-Rex"}, ["Primal Egg"] = {"Parasaurolophus", "Iguanodon", "Pachycephalosaurus", "Dilophosaurus", "Ankylosaurus", "Spinosaurus"}, }
+
+-- 🔁 Create or update ESP label local function setESP(egg, petName) local existing = egg:FindFirstChild("PetESP") if not existing then local gui = Instance.new("BillboardGui") gui.Name = "PetESP" gui.Size = UDim2.new(0, 200, 0, 50) gui.StudsOffset = Vector3.new(0, 3, 0) gui.AlwaysOnTop = true gui.Adornee = egg:FindFirstChildWhichIsA("BasePart") gui.Parent = egg
+
+local label = Instance.new("TextLabel")
+    label.Name = "Label"
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextStrokeTransparency = 0.5
+    label.Font = Enum.Font.GothamBold
+    label.TextScaled = true
+    label.Parent = gui
 end
 
--- 🎲 Pick random pet
-local function getRandomPet(eggName)
-    local pets = petTable[eggName]
-    return pets and pets[math.random(1, #pets)] or "???"
-end
-
--- 🧠 ESP Handler
-local function createOrUpdateESP(model, petName)
-    local part = model:FindFirstChildWhichIsA("BasePart")
-    if not part then return end
-
-    local gui = model:FindFirstChild("PetESP")
-    if not gui then
-        gui = Instance.new("BillboardGui")
-        gui.Name = "PetESP"
-        gui.Adornee = part
-        gui.Size = UDim2.new(0, 200, 0, 50)
-        gui.StudsOffset = Vector3.new(0, 3, 0)
-        gui.AlwaysOnTop = true
-        gui.Parent = model
-
-        local label = Instance.new("TextLabel")
-        label.Name = "Label"
-        label.BackgroundTransparency = 1
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.TextColor3 = Color3.new(1, 1, 1)
-        label.TextStrokeTransparency = 0.5
-        label.Font = Enum.Font.GothamBold
-        label.TextScaled = true
-        label.Parent = gui
-    end
-
+local gui = egg:FindFirstChild("PetESP")
+if gui then
     gui.Label.Text = petName
 end
 
--- 🔄 Update ESP for all eggs
-local function rerollAllEggs()
-    for _, egg in ipairs(getEggs()) do
-        local petName = getRandomPet(egg.Name)
-        createOrUpdateESP(egg, petName)
-    end
 end
 
--- 💻 UI Setup
-local screenGui = Instance.new("ScreenGui", playerGui)
-screenGui.Name = "PetRandomizerUI"
-screenGui.ResetOnSpawn = false
+-- 🔁 Reroll logic local function rerollAllEggs() for eggName, petList in pairs(petTable) do for _, egg in ipairs(Workspace:GetChildren()) do if egg:IsA("Model") and egg.Name == eggName then local petName = petList[math.random(1, #petList)] setESP(egg, petName) end end end end
 
-local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0, 250, 0, 130)
-frame.Position = UDim2.new(0, 20, 0.25, 0)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
+-- 🧠 UI Creation local screenGui = Instance.new("ScreenGui", playerGui) screenGui.Name = "PetESPGui"
 
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundTransparency = 1
-title.Text = "👁️ PET RANDOMIZER"
-title.TextColor3 = Color3.fromRGB(255, 170, 0)
-title.Font = Enum.Font.GothamBold
-title.TextScaled = true
+local frame = Instance.new("Frame", screenGui) frame.Size = UDim2.new(0, 250, 0, 140) frame.Position = UDim2.new(0, 20, 0.25, 0) frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 
-local toggleButton = Instance.new("TextButton", frame)
-toggleButton.Size = UDim2.new(1, -20, 0, 40)
-toggleButton.Position = UDim2.new(0, 10, 0, 35)
-toggleButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-toggleButton.Text = "AUTO REROLL: OFF"
-toggleButton.TextColor3 = Color3.new(1, 1, 1)
-toggleButton.Font = Enum.Font.GothamBold
-toggleButton.TextScaled = true
-
-local manualButton = Instance.new("TextButton", frame)
-manualButton.Size = UDim2.new(1, -20, 0, 40)
-manualButton.Position = UDim2.new(0, 10, 0, 85)
-manualButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-manualButton.Text = "MANUAL REROLL"
-manualButton.TextColor3 = Color3.new(1, 1, 1)
-manualButton.Font = Enum.Font.GothamBold
-manualButton.TextScaled = true
-
-local collapseButton = Instance.new("TextButton", frame)
-collapseButton.Size = UDim2.new(0, 30, 0, 30)
-collapseButton.Position = UDim2.new(1, -30, 0, 0)
-collapseButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-collapseButton.Text = "-"
-collapseButton.TextColor3 = Color3.new(1, 1, 1)
-collapseButton.Font = Enum.Font.GothamBold
-collapseButton.TextScaled = true
-
--- ⚙️ Button Logic
-local autoEnabled
