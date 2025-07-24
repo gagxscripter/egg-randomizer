@@ -1,201 +1,67 @@
+-- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+-- Player and camera
 local player = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
 
--- Eggs and their pets
+-- Eggs and pets dictionary
 local petTable = {
-    ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
-    ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
-    ["Rare Egg"] = {"Orange Tabby", "Spotted Deer", "Pig", "Rooster", "Monkey"},
-    ["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"},
-    ["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"},
-    ["Bug Egg"] = {"Snail", "Giant Ant", "Caterpillar", "Praying Mantis", "Dragonfly"},
-    ["Night Egg"] = {"Hedgehog", "Mole", "Frog", "Echo Frog", "Night Owl", "Raccoon"},
-    ["Bee Egg"] = {"Bee", "Honey Bee", "Bear Bee", "Petal Bee", "Queen Bee"},
-    ["Anti‑Bee Egg"] = {"Wasp", "Tarantula Hawk", "Moth", "Butterfly", "Disco Bee"},
-    ["Common Summer Egg"] = {"Starfish", "Seagull", "Crab"},
-    ["Rare Summer Egg"] = {"Flamingo", "Toucan", "Sea Turtle", "Orangutan", "Seal"},
-    ["Paradise Egg"] = {"Ostrich", "Peacock", "Capybara", "Scarlet Macaw", "Mimic Octopus"},
-    ["Oasis Egg"] = {"Meerkat", "Sand Snake", "Axolotl", "Hyacinth Macaw", "Fennec Fox"},
-    ["Zen Egg"] = {"Shiba Inu", "Nihonzaru", "Tanuki", "Tanchozuru", "Kappa", "Kitsune"},
-    ["Dinosaur Egg"] = {"Raptor", "Triceratops", "Stegosaurus", "Pterodactyl", "Brontosaurus", "T-Rex"},
-    ["Primal Egg"] = {"Parasaurolophus", "Iguanodon", "Pachycephalosaurus", "Dilophosaurus", "Ankylosaurus", "Spinosaurus"},
+    ["Common Egg"] = {"Cat", "Dog", "Bunny"},
+    ["Rare Egg"] = {"Tiger", "Panda", "Wolf"},
+    ["Legendary Egg"] = {"Dragon", "Phoenix", "Unicorn"},
 }
 
--- UI Creation
-local ScreenGui = Instance.new("ScreenGui", player.PlayerGui)
-ScreenGui.Name = "EggRandomizerUI"
+-- Create UI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PetHatchDisplay"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
-local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 230, 0, 120)
-Frame.Position = UDim2.new(0, 20, 0, 20)
-Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-Frame.BorderSizePixel = 0
-Frame.Active = true
-Frame.Draggable = true
+local petLabel = Instance.new("TextLabel")
+petLabel.Size = UDim2.new(0, 300, 0, 50)
+petLabel.Position = UDim2.new(0.5, -150, 0.85, 0)
+petLabel.BackgroundTransparency = 0.3
+petLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+petLabel.BorderSizePixel = 0
+petLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+petLabel.Font = Enum.Font.GothamBold
+petLabel.TextScaled = true
+petLabel.Text = ""
+petLabel.Visible = false
+petLabel.Parent = screenGui
 
-local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.Position = UDim2.new(0, 0, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "Egg Randomizer"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 22
-
-local function createButton(text, y)
-    local btn = Instance.new("TextButton", Frame)
-    btn.Size = UDim2.new(1, -20, 0, 40)
-    btn.Position = UDim2.new(0, 10, 0, y)
-    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 20
-    btn.Text = text
-    return btn
+-- Function to simulate hatching
+local function hatchEgg(eggName)
+	local petList = petTable[eggName]
+	if not petList then return end
+	
+	local chosenPet = petList[math.random(1, #petList)]
+	
+	-- Show the pet name
+	petLabel.Text = "You hatched a: " .. chosenPet
+	petLabel.Visible = true
+	
+	-- Hide after few seconds
+	task.delay(3, function()
+		petLabel.Visible = false
+	end)
 end
 
-local btnAutoRandomize = createButton("🔄 Auto Randomize: OFF", 40)
-local btnESP = createButton("👁️ ESP: OFF", 90)
-
--- State
-local espEnabled = false
-local autoRandomize = false
-local eggESPInstances = {}
-local eggPreviews = {}
-
--- Create ESP above egg function
-local function createESP(eggModel, petName)
-    local part = eggModel:FindFirstChild("Main") or eggModel.PrimaryPart or eggModel:FindFirstChildWhichIsA("BasePart")
-    if not part then return nil end
-
-    -- Avoid duplicates
-    if eggESPInstances[eggModel] then
-        local gui = eggESPInstances[eggModel]
-        local label = gui:FindFirstChild("TextLabel")
-        if label and label.Text ~= petName then
-            label.Text = petName
-        end
-        return gui
-    end
-
-    local esp = Instance.new("BillboardGui")
-    esp.Name = "EggESP"
-    esp.Adornee = part
-    esp.Size = UDim2.new(0, 160, 0, 35)
-    esp.StudsOffset = Vector3.new(0, 3, 0)
-    esp.AlwaysOnTop = true
-
-    local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, 0, 1, 0)
-    bg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    bg.BackgroundTransparency = 0.3
-    bg.BorderSizePixel = 0
-    bg.Parent = esp
-
-    local label = Instance.new("TextLabel")
-    label.Name = "TextLabel"
-    label.Size = UDim2.new(1, -10, 1, -10)
-    label.Position = UDim2.new(0, 5, 0, 5)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.fromRGB(255, 215, 0)
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = 20
-    label.TextStrokeColor3 = Color3.new(0, 0, 0)
-    label.TextStrokeTransparency = 0
-    label.Text = petName
-    label.TextWrapped = true
-    label.Parent = esp
-
-    local shadow = Instance.new("TextLabel")
-    shadow.Name = "Shadow"
-    shadow.BackgroundTransparency = 1
-    shadow.Size = label.Size
-    shadow.Position = UDim2.new(0, 6, 0, 6)
-    shadow.Font = label.Font
-    shadow.TextSize = label.TextSize
-    shadow.TextColor3 = Color3.new(0, 0, 0)
-    shadow.TextTransparency = 0.5
-    shadow.Text = petName
-    shadow.TextStrokeTransparency = 1
-    shadow.TextWrapped = true
-    shadow.ZIndex = label.ZIndex - 1
-    shadow.Parent = esp
-
-    esp.Parent = part
-    eggESPInstances[eggModel] = esp
-
-    return esp
-end
-
--- Remove all ESP
-local function clearAllESP()
-    for eggModel, gui in pairs(eggESPInstances) do
-        if gui and gui.Parent then
-            gui:Destroy()
-        end
-    end
-    eggESPInstances = {}
-end
-
--- Randomize eggs pets and update ESP if enabled
-local function randomizeEggs()
-    eggPreviews = {}
-    for eggName, pets in pairs(petTable) do
-        for _, eggModel in pairs(Workspace:GetChildren()) do
-            if eggModel:IsA("Model") and eggModel.Name == eggName then
-                local petName = pets[math.random(#pets)]
-                eggPreviews[eggModel] = petName
-                if espEnabled then
-                    createESP(eggModel, petName)
-                end
-            end
-        end
-    end
-end
-
--- Button Clicks
-
-btnAutoRandomize.MouseButton1Click:Connect(function()
-    autoRandomize = not autoRandomize
-    if autoRandomize then
-        btnAutoRandomize.Text = "🔄 Auto Randomize: ON"
-    else
-        btnAutoRandomize.Text = "🔄 Auto Randomize: OFF"
-    end
-end)
-
-btnESP.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled
-    if espEnabled then
-        btnESP.Text = "👁️ ESP: ON"
-        -- Show ESP for current previews or randomize if none
-        if next(eggPreviews) == nil then
-            randomizeEggs()
-        else
-            for eggModel, petName in pairs(eggPreviews) do
-                createESP(eggModel, petName)
-            end
-        end
-    else
-        btnESP.Text = "👁️ ESP: OFF"
-        clearAllESP()
-    end
-end)
-
--- Auto Randomize Loop
-local AUTO_RANDOMIZE_INTERVAL = 10
-local timer = 0
-
-RunService.RenderStepped:Connect(function(dt)
-    if autoRandomize then
-        timer = timer + dt
-        if timer >= AUTO_RANDOMIZE_INTERVAL then
-            timer = 0
-            randomizeEggs()
-        end
-    end
+-- Simulate an egg hatch every 10 seconds (for demo/testing)
+task.spawn(function()
+	while true do
+		task.wait(10)
+		
+		local eggNames = {}
+		for name in pairs(petTable) do
+			table.insert(eggNames, name)
+		end
+		
+		local randomEgg = eggNames[math.random(1, #eggNames)]
+		hatchEgg(randomEgg)
+	end
 end)
