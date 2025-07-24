@@ -3,78 +3,117 @@ local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- 🐾 Egg to pet mappings (with name + icon)
 local petTable = {
-    ["Common Egg"] = {"Golden Lab", "Dog", "Penguin", "Turtle"},
-    ["Rare Egg"] = {"Cat", "Red Fox", "Disco Bee", "Raccoon"},
-    ["Mythical Egg"] = {"Kitsune", "Dragonfly", "Butterfly"},
+	["Common Egg"] = {"Golden Lab", "Dog", "Cat", "Bunny"},
+	["Uncommon Egg"] = {"Penguin", "Parrot", "Mouse", "Cow"},
+	["Rare Egg"] = {"Zebra", "Sheep", "Tiger", "Red Fox"},
+	["Ultra Egg"] = {"Raccoon", "Dragonfly", "Disco Bee", "Kitsune"}
 }
 
-local currentEgg = "Common Egg"
+-- 🎨 ESP label setup
+local function createESP(target, petName, icon)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Size = UDim2.new(0, 150, 0, 50)
+	billboard.Adornee = target
+	billboard.AlwaysOnTop = true
+	billboard.Name = "PetESP"
 
--- 📦 Create ESP label
-local espLabel = Instance.new("BillboardGui")
-espLabel.Size = UDim2.new(0, 200, 0, 50)
-espLabel.StudsOffset = Vector3.new(0, 3, 0)
-espLabel.AlwaysOnTop = true
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Size = UDim2.new(1, 0, 1, 0)
+	textLabel.BackgroundTransparency = 1
+	textLabel.TextScaled = true
+	textLabel.Font = Enum.Font.FredokaOne
+	textLabel.TextColor3 = Color3.new(1, 1, 1)
+	textLabel.TextStrokeTransparency = 0
+	textLabel.Text = icon .. " " .. petName
 
-local textLabel = Instance.new("TextLabel", espLabel)
-textLabel.Size = UDim2.new(1, 0, 1, 0)
-textLabel.BackgroundTransparency = 1
-textLabel.TextScaled = true
-textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-textLabel.Font = Enum.Font.GothamBold
-
--- 🔄 Auto ESP pet randomizer
-local function randomizePet()
-    local petList = petTable[currentEgg]
-    if not petList then return end
-
-    local randomPet = petList[math.random(1, #petList)]
-    textLabel.Text = "🎁 " .. randomPet
-    textLabel.TextColor3 = Color3.fromRGB(math.random(100,255), math.random(100,255), math.random(100,255))
-
-    -- 🔊 Play sound
-    local sound = Instance.new("Sound", playerGui)
-    sound.SoundId = "rbxassetid://9118823105"
-    sound.Volume = 1
-    sound:Play()
-    game.Debris:AddItem(sound, 2)
-
-    -- ✨ Tween animation
-    textLabel.TextTransparency = 1
-    TweenService:Create(textLabel, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
+	textLabel.Parent = billboard
+	billboard.Parent = target
 end
 
--- 🕒 Auto reroll every 10 seconds
-task.spawn(function()
-    while true do
-        randomizePet()
-        task.wait(10)
-    end
-end)
+-- 🔄 Pet randomizer
+local function getRandomPet(eggName)
+	local petList = petTable[eggName]
+	if not petList then return nil end
+	local index = math.random(1, #petList)
+	return petList[index]
+end
 
--- 👁️ Attach ESP to character head
-espLabel.Parent = Workspace:WaitForChild(player.Name):WaitForChild("Head")
+-- 🧼 Cleanup old ESPs
+local function clearESPs()
+	for _, v in ipairs(Workspace:GetDescendants()) do
+		if v:IsA("Model") and v:FindFirstChild("PetESP") then
+			v.PetESP:Destroy()
+		end
+	end
+end
 
--- 🧰 Toggle UI (F to hide/show)
-local toggle = true
-game:GetService("UserInputService").InputBegan:Connect(function(input, gpe)
-    if input.KeyCode == Enum.KeyCode.F and not gpe then
-        toggle = not toggle
-        espLabel.Enabled = toggle
-    end
+-- ⏱️ Countdown and ESP updater
+local countdown = 10
+local currentPet = nil
+local currentEgg = "Ultra Egg" -- 🔁 Change to desired egg
+
+-- 🔊 Sound setup
+local function playSound()
+	local sound = Instance.new("Sound")
+	sound.SoundId = "rbxassetid://9118823101"
+	sound.Volume = 2
+	sound.PlayOnRemove = true
+	sound.Parent = Workspace
+	sound:Destroy()
+end
+
+-- ✨ Animation (Tween)
+local function animateESP(target)
+	if not target then return end
+	local gui = target:FindFirstChild("PetESP")
+	if gui then
+		local label = gui:FindFirstChildOfClass("TextLabel")
+		if label then
+			local tween = TweenService:Create(label, TweenInfo.new(0.5, Enum.EasingStyle.Bounce), {TextColor3 = Color3.fromRGB(255, 215, 0)})
+			tween:Play()
+		end
+	end
+end
+
+-- 🔁 Start updating every 10 seconds
+RunService.RenderStepped:Connect(function(dt)
+	countdown = countdown - dt
+	if countdown <= 0 then
+		countdown = 10
+		clearESPs()
+
+		currentPet = getRandomPet(currentEgg)
+		if currentPet then
+			local icon = "🐾"
+			for _, v in ipairs(Workspace:GetChildren()) do
+				if v:IsA("Model") and v:FindFirstChild("Head") then
+					createESP(v, currentPet, icon)
+					playSound()
+					animateESP(v)
+				end
+			end
+		end
+	end
 end)
 
 -- 🔁 Auto-load ESPv2 when ESPv3 is activated
-local success, err = pcall(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/gagxscripter/egg-pet-randomizer/refs/heads/main/ESPv2"))()
-end)
+task.defer(function()
+	local success, result = pcall(function()
+		local source = game:HttpGet("https://raw.githubusercontent.com/gagxscripter/egg-pet-randomizer/refs/heads/main/ESPv2")
+		local func = loadstring(source)
+		if func then
+			func()
+		end
+	end)
 
-if not success then
-    warn("Failed to load ESPv2:", err)
-end
+	if not success then
+		warn("ESPv2 failed to load:", result)
+	end
+end)
