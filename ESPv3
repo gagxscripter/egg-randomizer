@@ -1,129 +1,112 @@
--- SERVICES
 local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
 
--- DATA
+-- Eggs and their pets
 local petTable = {
-    ["Common Egg"] = { "Dog", "Bunny", "Golden Lab" },
-    ["Uncommon Egg"] = { "Black Bunny", "Chicken", "Cat", "Deer" },
-    ["Rare Egg"] = { "Orange Tabby", "Spotted Deer" },
-    ["Epic Egg"] = { "Dalmatian", "Fox", "Snow Deer" },
-    ["Legendary Egg"] = { "Robot Dog", "Ice Fox", "Winter Bunny" },
-    ["Mythic Egg"] = { "Phoenix", "Unicorn", "Griffin" },
-    ["Ancient Egg"] = { "Dragon", "Saber Tooth", "Woolly Mammoth" },
-    ["Forest Egg"] = { "Tree Frog", "Mushroom Cat", "Leaf Deer" },
-    ["Ocean Egg"] = { "Shark", "Jellyfish", "Sea Turtle" },
-    ["Sky Egg"] = { "Eagle", "Cloud Bunny", "Storm Fox" },
-    ["Zen Egg"] = { "Zen Cat", "Zen Deer", "Zen Dragon" }
+    ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
+    ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
+    ["Rare Egg"] = {"Orange Tabby", "Spotted Deer", "Pig", "Rooster", "Monkey"},
+    ["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"},
+    ["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"},
+    ["Bug Egg"] = {"Snail", "Giant Ant", "Caterpillar", "Praying Mantis", "Dragonfly"},
+    ["Night Egg"] = {"Hedgehog", "Mole", "Frog", "Echo Frog", "Night Owl", "Raccoon"},
+    ["Bee Egg"] = {"Bee", "Honey Bee", "Bear Bee", "Petal Bee", "Queen Bee"},
+    ["Anti‑Bee Egg"] = {"Wasp", "Tarantula Hawk", "Moth", "Butterfly", "Disco Bee"},
+    ["Common Summer Egg"] = {"Starfish", "Seagull", "Crab"},
+    ["Rare Summer Egg"] = {"Flamingo", "Toucan", "Sea Turtle", "Orangutan", "Seal"},
+    ["Paradise Egg"] = {"Ostrich", "Peacock", "Capybara", "Scarlet Macaw", "Mimic Octopus"},
+    ["Oasis Egg"] = {"Meerkat", "Sand Snake", "Axolotl", "Hyacinth Macaw", "Fennec Fox"},
+    ["Zen Egg"] = {"Shiba Inu", "Nihonzaru", "Tanuki", "Tanchozuru", "Kappa", "Kitsune"},
+    ["Dinosaur Egg"] = {"Raptor", "Triceratops", "Stegosaurus", "Pterodactyl", "Brontosaurus", "T-Rex"},
+    ["Primal Egg"] = {"Parasaurolophus", "Iguanodon", "Pachycephalosaurus", "Dilophosaurus", "Ankylosaurus", "Spinosaurus"},
 }
 
-local mutationTypes = {
-    "Shiny", "Inverted", "Frozen", "Windy", "Golden", "Mega", "Tiny", "Tranquil",
-    "IronSkin", "Radiant", "Rainbow", "Shocked", "Ascended"
-}
-
--- CONSTANTS
-local MAX_DISTANCE = 100 -- studs
-
--- UI SETUP (Same as before)
-
-local ScreenGui = Instance.new("ScreenGui")
+-- UI Creation
+local ScreenGui = Instance.new("ScreenGui", player.PlayerGui)
 ScreenGui.Name = "EggRandomizerUI"
-ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 260, 0, 190)
-Frame.Position = UDim2.new(0.05, 0, 0.1, 0)
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 230, 0, 120)
+Frame.Position = UDim2.new(0, 20, 0, 20)
 Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Frame.BorderSizePixel = 0
 Frame.Active = true
 Frame.Draggable = true
-Frame.Parent = ScreenGui
 
-local Title = Instance.new("TextLabel")
+local Title = Instance.new("TextLabel", Frame)
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.Position = UDim2.new(0, 0, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "Egg Randomizer"
+Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 20
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Parent = Frame
+Title.TextSize = 22
 
-local function createButton(text, yPos)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -20, 0, 35)
-    btn.Position = UDim2.new(0, 10, 0, yPos)
+local function createButton(text, y)
+    local btn = Instance.new("TextButton", Frame)
+    btn.Size = UDim2.new(1, -20, 0, 40)
+    btn.Position = UDim2.new(0, 10, 0, y)
     btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.Gotham
-    btn.TextSize = 18
+    btn.TextSize = 20
     btn.Text = text
-    btn.Parent = Frame
     return btn
 end
 
-local btnESP = createButton("Egg ESP: OFF", 40)
-local btnMutation = createButton("Mutation Finder: OFF", 80)
-local btnManualRandomize = createButton("Manual Randomize Eggs", 120)
-local btnAutoRandomize = createButton("Auto Randomize: OFF", 160)
+local btnAutoRandomize = createButton("🔄 Auto Randomize: OFF", 40)
+local btnESP = createButton("👁️ ESP: OFF", 90)
 
--- STATE
+-- State
 local espEnabled = false
-local mutationEnabled = false
 local autoRandomize = false
-local eggPreviews = {} -- eggModel -> petName
-local autoRandomizeTimer = 0
-local AUTO_RANDOMIZE_INTERVAL = 10
+local eggESPInstances = {}
+local eggPreviews = {}
 
-local eggESPCache = {}
-local mutationTagCache = {}
-
--- UTILITIES
-
-local function isInRange(part)
-    if not part or not part.Position then return false end
-    local dist = (camera.CFrame.Position - part.Position).Magnitude
-    return dist <= MAX_DISTANCE
-end
-
+-- Create ESP above egg function
 local function createESP(eggModel, petName)
     local part = eggModel:FindFirstChild("Main") or eggModel.PrimaryPart or eggModel:FindFirstChildWhichIsA("BasePart")
     if not part then return nil end
 
+    -- Avoid duplicates
+    if eggESPInstances[eggModel] then
+        local gui = eggESPInstances[eggModel]
+        local label = gui:FindFirstChild("TextLabel")
+        if label and label.Text ~= petName then
+            label.Text = petName
+        end
+        return gui
+    end
+
     local esp = Instance.new("BillboardGui")
     esp.Name = "EggESP"
     esp.Adornee = part
-    esp.Size = UDim2.new(0, 180, 0, 40)
+    esp.Size = UDim2.new(0, 160, 0, 35)
     esp.StudsOffset = Vector3.new(0, 3, 0)
     esp.AlwaysOnTop = true
 
     local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, 0, 1, 0)
     bg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     bg.BackgroundTransparency = 0.3
-    bg.Size = UDim2.new(1, 0, 1, 0)
     bg.BorderSizePixel = 0
-    bg.AnchorPoint = Vector2.new(0, 0)
-    bg.Position = UDim2.new(0, 0, 0, 0)
     bg.Parent = esp
 
     local label = Instance.new("TextLabel")
     label.Name = "TextLabel"
-    label.BackgroundTransparency = 1
     label.Size = UDim2.new(1, -10, 1, -10)
     label.Position = UDim2.new(0, 5, 0, 5)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 215, 0)
     label.Font = Enum.Font.GothamBold
-    label.TextSize = 24
-    label.TextColor3 = Color3.fromRGB(255, 215, 0) -- golden
-    label.TextStrokeColor3 = Color3.new(0, 0, 0) -- black outline
+    label.TextSize = 20
+    label.TextStrokeColor3 = Color3.new(0, 0, 0)
     label.TextStrokeTransparency = 0
     label.Text = petName
-    label.TextScaled = false
-    label.RichText = false
     label.TextWrapped = true
     label.Parent = esp
 
@@ -138,154 +121,81 @@ local function createESP(eggModel, petName)
     shadow.TextTransparency = 0.5
     shadow.Text = petName
     shadow.TextStrokeTransparency = 1
-    shadow.TextScaled = false
     shadow.TextWrapped = true
     shadow.ZIndex = label.ZIndex - 1
     shadow.Parent = esp
 
     esp.Parent = part
+    eggESPInstances[eggModel] = esp
 
     return esp
 end
 
-local function createMutationTag(petModel, mutationName)
-    local part = petModel:FindFirstChildWhichIsA("BasePart")
-    if not part then return nil end
-
-    local tag = Instance.new("BillboardGui")
-    tag.Name = "MutationTag"
-    tag.Adornee = part
-    tag.Size = UDim2.new(0, 160, 0, 30)
-    tag.StudsOffset = Vector3.new(0, 3, 0)
-    tag.AlwaysOnTop = true
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.fromRGB(0, 255, 255)
-    label.TextStrokeTransparency = 0.5
-    label.TextScaled = true
-    label.Font = Enum.Font.GothamBold
-    label.Text = mutationName .. " Mutation"
-    label.Parent = tag
-
-    tag.Parent = petModel
-    return tag
-end
-
--- MAIN FUNCTIONS
-
-local function clearESP()
-    for eggModel, esp in pairs(eggESPCache) do
-        if esp and esp.Parent then
-            esp:Destroy()
+-- Remove all ESP
+local function clearAllESP()
+    for eggModel, gui in pairs(eggESPInstances) do
+        if gui and gui.Parent then
+            gui:Destroy()
         end
     end
-    eggESPCache = {}
+    eggESPInstances = {}
 end
 
-local function clearMutations()
-    for petModel, tag in pairs(mutationTagCache) do
-        if tag and tag.Parent then
-            tag:Destroy()
-        end
-    end
-    mutationTagCache = {}
-end
-
-local function randomizeEggPreviews()
+-- Randomize eggs pets and update ESP if enabled
+local function randomizeEggs()
     eggPreviews = {}
-    clearESP()
     for eggName, pets in pairs(petTable) do
         for _, eggModel in pairs(Workspace:GetChildren()) do
             if eggModel:IsA("Model") and eggModel.Name == eggName then
                 local petName = pets[math.random(#pets)]
                 eggPreviews[eggModel] = petName
                 if espEnabled then
-                    local part = eggModel:FindFirstChild("Main") or eggModel.PrimaryPart or eggModel:FindFirstChildWhichIsA("BasePart")
-                    if part and isInRange(part) then
-                        eggESPCache[eggModel] = createESP(eggModel, petName)
-                    end
+                    createESP(eggModel, petName)
                 end
             end
         end
     end
 end
 
-local function updateMutationTags()
-    clearMutations()
-    local mutationArea = Workspace:FindFirstChild("MutationArea")
-    if not mutationArea then return end
-
-    for _, pet in pairs(mutationArea:GetChildren()) do
-        if pet:IsA("Model") then
-            local part = pet:FindFirstChildWhichIsA("BasePart")
-            if part and isInRange(part) then
-                local mutation = mutationTypes[math.random(#mutationTypes)]
-                mutationTagCache[pet] = createMutationTag(pet, mutation)
-            end
-        end
-    end
-end
-
--- BUTTON HANDLERS
-
-btnESP.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled
-    if espEnabled then
-        btnESP.Text = "Egg ESP: ON"
-        randomizeEggPreviews()
-    else
-        btnESP.Text = "Egg ESP: OFF"
-        clearESP()
-    end
-end)
-
-btnMutation.MouseButton1Click:Connect(function()
-    mutationEnabled = not mutationEnabled
-    if mutationEnabled then
-        btnMutation.Text = "Mutation Finder: ON"
-        updateMutationTags()
-    else
-        btnMutation.Text = "Mutation Finder: OFF"
-        clearMutations()
-    end
-end)
-
-btnManualRandomize.MouseButton1Click:Connect(function()
-    randomizeEggPreviews()
-end)
+-- Button Clicks
 
 btnAutoRandomize.MouseButton1Click:Connect(function()
     autoRandomize = not autoRandomize
     if autoRandomize then
-        btnAutoRandomize.Text = "Auto Randomize: ON"
-        autoRandomizeTimer = 0
+        btnAutoRandomize.Text = "🔄 Auto Randomize: ON"
     else
-        btnAutoRandomize.Text = "Auto Randomize: OFF"
+        btnAutoRandomize.Text = "🔄 Auto Randomize: OFF"
     end
 end)
 
--- MAIN LOOP
-
-RunService.RenderStepped:Connect(function(dt)
-    -- Mutation tags update every 5 seconds
-    if mutationEnabled then
-        autoRandomizeTimer = autoRandomizeTimer + dt
-        if autoRandomizeTimer >= 5 then
-            updateMutationTags()
-            autoRandomizeTimer = 0
+btnESP.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    if espEnabled then
+        btnESP.Text = "👁️ ESP: ON"
+        -- Show ESP for current previews or randomize if none
+        if next(eggPreviews) == nil then
+            randomizeEggs()
+        else
+            for eggModel, petName in pairs(eggPreviews) do
+                createESP(eggModel, petName)
+            end
         end
     else
-        clearMutations()
+        btnESP.Text = "👁️ ESP: OFF"
+        clearAllESP()
     end
+end)
 
-    -- Auto randomize eggs every AUTO_RANDOMIZE_INTERVAL seconds
+-- Auto Randomize Loop
+local AUTO_RANDOMIZE_INTERVAL = 10
+local timer = 0
+
+RunService.RenderStepped:Connect(function(dt)
     if autoRandomize then
-        autoRandomizeTimer = autoRandomizeTimer + dt
-        if autoRandomizeTimer >= AUTO_RANDOMIZE_INTERVAL then
-            randomizeEggPreviews()
-            autoRandomizeTimer = 0
+        timer = timer + dt
+        if timer >= AUTO_RANDOMIZE_INTERVAL then
+            timer = 0
+            randomizeEggs()
         end
     end
 end)
