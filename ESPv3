@@ -1,4 +1,4 @@
--- ✅ Ultimate Pet Randomizer ESP with Countdown, Icon, Sound, and Animation
+-- ✅ Fully Working Pet Randomizer ESP with Countdown, Icon, Sound, and UI
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
@@ -34,6 +34,7 @@ local currentCooldown = cooldownTime
 -- 🎮 UI Setup
 local screenGui = Instance.new("ScreenGui", playerGui)
 screenGui.Name = "PetRandomizerUI"
+screenGui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", screenGui)
 frame.Position = UDim2.new(0, 10, 0, 10)
@@ -90,10 +91,10 @@ local function playSoundAt(egg)
     sound.Volume = 1
     sound.PlayOnRemove = true
     sound.Parent = egg
-    sound:Destroy() -- Triggers the sound
+    sound:Destroy() -- This plays the sound
 end
 
--- ✨ Update or create ESP for egg
+-- ✨ Create or update ESP label
 local function updateLabel(egg)
     local pets = petTable[egg.Name]
     if not pets then return end
@@ -102,6 +103,7 @@ local function updateLabel(egg)
     local gui = eggLabels[egg]
     if not gui then
         local billboard = Instance.new("BillboardGui")
+        billboard.Name = "PetESP"
         billboard.Size = UDim2.new(0, 150, 0, 60)
         billboard.AlwaysOnTop = true
         billboard.StudsOffset = Vector3.new(0, 2, 0)
@@ -113,7 +115,7 @@ local function updateLabel(egg)
         icon.Position = UDim2.new(0, 0, 0.1, 0)
         icon.BackgroundTransparency = 1
         icon.Image = ""
-        icon.ImageTransparency = 0
+        icon.ImageTransparency = 1
         icon.Parent = billboard
 
         local text = Instance.new("TextLabel")
@@ -125,7 +127,7 @@ local function updateLabel(egg)
         text.TextColor3 = Color3.new(1, 1, 1)
         text.Font = Enum.Font.GothamBold
         text.Text = ""
-        text.TextTransparency = 0
+        text.TextTransparency = 1
         text.Parent = billboard
 
         eggLabels[egg] = billboard
@@ -136,21 +138,17 @@ local function updateLabel(egg)
     local text = gui:FindFirstChild("PetName")
 
     -- Animate fade-out
-    local tOut1 = TweenService:Create(text, TweenInfo.new(0.3), {TextTransparency = 1})
-    local tOut2 = TweenService:Create(icon, TweenInfo.new(0.3), {ImageTransparency = 1})
-    tOut1:Play()
-    tOut2:Play()
-    tOut1.Completed:Wait()
+    TweenService:Create(text, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+    TweenService:Create(icon, TweenInfo.new(0.3), {ImageTransparency = 1}):Play()
+    task.wait(0.3)
 
     -- Set new values
     text.Text = chosen.name
     icon.Image = chosen.icon
 
     -- Animate fade-in
-    local tIn1 = TweenService:Create(text, TweenInfo.new(0.3), {TextTransparency = 0})
-    local tIn2 = TweenService:Create(icon, TweenInfo.new(0.3), {ImageTransparency = 0})
-    tIn1:Play()
-    tIn2:Play()
+    TweenService:Create(text, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+    TweenService:Create(icon, TweenInfo.new(0.3), {ImageTransparency = 0}):Play()
 end
 
 -- 🔁 Main Reroll Loop
