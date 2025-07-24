@@ -3,63 +3,47 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
--- Player and camera
 local player = Players.LocalPlayer
-local camera = Workspace.CurrentCamera
 
--- Eggs and pets dictionary
+-- Pet table
 local petTable = {
     ["Common Egg"] = {"Cat", "Dog", "Bunny"},
+    ["Zen Egg"] = {"Nihonzaru", "Shiba Inu", "Kappa"},
     ["Rare Egg"] = {"Tiger", "Panda", "Wolf"},
     ["Legendary Egg"] = {"Dragon", "Phoenix", "Unicorn"},
 }
 
--- Create UI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "PetHatchDisplay"
-screenGui.Parent = player:WaitForChild("PlayerGui")
+-- UI Setup
+local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+screenGui.Name = "PetRandomizerUI"
+screenGui.ResetOnSpawn = false
 
-local petLabel = Instance.new("TextLabel")
-petLabel.Size = UDim2.new(0, 400, 0, 60)
-petLabel.Position = UDim2.new(0.5, -200, 0.8, 0)
-petLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-petLabel.BackgroundTransparency = 0.2
-petLabel.BorderSizePixel = 0
-petLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-petLabel.Font = Enum.Font.GothamBold
-petLabel.TextScaled = true
-petLabel.Text = ""
-petLabel.Visible = false
-petLabel.Parent = screenGui
+-- Main Frame
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.new(0, 250, 0, 200)
+mainFrame.Position = UDim2.new(0, 20, 0.2, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 2
+mainFrame.Name = "MainFrame"
+mainFrame.Active = true
+mainFrame.Draggable = true
 
--- Function to hatch an egg and show UI
-local function hatchEgg(eggName)
-	local petList = petTable[eggName]
-	if not petList then return end
+-- Title
+local title = Instance.new("TextLabel", mainFrame)
+title.Size = UDim2.new(1, -30, 0, 30)
+title.Position = UDim2.new(0, 5, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "👁️ PET RANDOMIZER"
+title.TextColor3 = Color3.fromRGB(255, 130, 0)
+title.Font = Enum.Font.GothamBold
+title.TextScaled = true
 
-	local chosenPet = petList[math.random(1, #petList)]
-
-	-- Display pet name
-	petLabel.Text = "You hatched a: " .. chosenPet
-	petLabel.Visible = true
-
-	-- Hide after 3 seconds
-	task.delay(3, function()
-		petLabel.Visible = false
-	end)
-end
-
--- Test loop: hatch a random egg every 10 seconds
-task.spawn(function()
-	while true do
-		task.wait(10)
-
-		local eggNames = {}
-		for name in pairs(petTable) do
-			table.insert(eggNames, name)
-		end
-
-		local randomEgg = eggNames[math.random(1, #eggNames)]
-		hatchEgg(randomEgg)
-	end
-end)
+-- Minimize Button
+local minimizeBtn = Instance.new("TextButton", mainFrame)
+minimizeBtn.Size = UDim2.new(0, 25, 0, 25)
+minimizeBtn.Position = UDim2.new(1, -30, 0, 2)
+minimizeBtn.Text = "-"
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+minimizeBtn.TextColor3 = Color3.new(1, 1, 1)
+minimizeBtn.Font = Enum.Font.GothamBold
+min
