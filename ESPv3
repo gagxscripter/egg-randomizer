@@ -7,7 +7,7 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Your egg-to-pet data
+-- Egg-to-pet data
 local petTable = {
     ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
     ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
@@ -72,7 +72,7 @@ local function createOrUpdateESP(eggModel, text)
         label.Parent = gui
     end
 
-    gui.Label.Text = "👁️ESP: " .. text
+    gui.Label.Text = text
 end
 
 local function rerollAllEggs()
@@ -81,7 +81,7 @@ local function rerollAllEggs()
     end
 end
 
--- GUI
+-- GUI SETUP
 local screenGui = Instance.new("ScreenGui", playerGui)
 screenGui.Name = "PetRandomizerUI"
 screenGui.ResetOnSpawn = false
@@ -110,52 +110,4 @@ toggleButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 toggleButton.Text = "AUTO REROLL: OFF"
 toggleButton.TextColor3 = Color3.new(1, 1, 1)
 toggleButton.Font = Enum.Font.GothamBold
-toggleButton.TextScaled = true
-
-local manualButton = Instance.new("TextButton", frame)
-manualButton.Size = UDim2.new(1, -20, 0, 40)
-manualButton.Position = UDim2.new(0, 10, 0, 85)
-manualButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-manualButton.Text = "MANUAL REROLL"
-manualButton.TextColor3 = Color3.new(1, 1, 1)
-manualButton.Font = Enum.Font.GothamBold
-manualButton.TextScaled = true
-
--- Minimize
-local collapse = false
-local collapseButton = Instance.new("TextButton", frame)
-collapseButton.Size = UDim2.new(0, 30, 0, 30)
-collapseButton.Position = UDim2.new(1, -30, 0, 0)
-collapseButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-collapseButton.Text = "-"
-collapseButton.TextColor3 = Color3.new(1, 1, 1)
-collapseButton.Font = Enum.Font.GothamBold
-collapseButton.TextScaled = true
-
-collapseButton.MouseButton1Click:Connect(function()
-    collapse = not collapse
-    toggleButton.Visible = not collapse
-    manualButton.Visible = not collapse
-    frame.Size = collapse and UDim2.new(0, 250, 0, 30) or UDim2.new(0, 250, 0, 130)
-    collapseButton.Text = collapse and "+" or "-"
-end)
-
--- Toggle
-local autoOn = false
-toggleButton.MouseButton1Click:Connect(function()
-    autoOn = not autoOn
-    toggleButton.Text = autoOn and "AUTO REROLL: ON" or "AUTO REROLL: OFF"
-end)
-
-manualButton.MouseButton1Click:Connect(rerollAllEggs)
-
--- Auto Loop
-task.spawn(function()
-    while true do
-        if autoOn then rerollAllEggs() end
-        task.wait(10)
-    end
-end)
-
--- First run
-rerollAllEggs()
+toggle
