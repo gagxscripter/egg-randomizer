@@ -1,15 +1,14 @@
--- ✅ Ultimate Pet Randomizer ESP with Countdown, Icon, Sound, and Animation
+-- ✅ Pet Randomizer ESP with Countdown, Icon, Sound, and Animation (Model/Part compatible)
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 
 local player = Players.LocalPlayer
-local camera = Workspace.CurrentCamera
-local playerGui = player:WaitForChild("PlayerGui")
+local countdownTime = 10
+local activeESP = {}
 
--- 🐾 Complete Egg → Pet Mappings
+-- 🐾 Full Egg → Pet Mappings
 local petTable = {
 	["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
 	["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
@@ -29,11 +28,8 @@ local petTable = {
 	["Primal Egg"] = {"Parasaurolophus", "Iguanodon", "Pachycephalosaurus", "Dilophosaurus", "Ankylosaurus", "Spinosaurus"},
 }
 
-local countdownTime = 10
-local activeESP = {}
-
 -- 📦 Billboard GUI
-local function createBillboard(name)
+local function createBillboard()
 	local billboard = Instance.new("BillboardGui")
 	billboard.Size = UDim2.new(0, 100, 0, 40)
 	billboard.StudsOffset = Vector3.new(0, 3, 0)
@@ -44,50 +40,62 @@ local function createBillboard(name)
 	label.BackgroundTransparency = 1
 	label.TextColor3 = Color3.fromRGB(255, 255, 0)
 	label.TextScaled = true
-	label.Text = name
+	label.Text = "..."
 	label.Font = Enum.Font.GothamBold
 	label.Parent = billboard
 
 	return billboard, label
 end
 
--- 🔊 Play sound
+-- 🔊 Sound effect
 local function playSound()
 	local sound = Instance.new("Sound", SoundService)
-	sound.SoundId = "rbxassetid://9118823101" -- Replace with your preferred sound
+	sound.SoundId = "rbxassetid://9118823101" -- Replace with custom if desired
 	sound.Volume = 2
 	sound:Play()
 	game.Debris:AddItem(sound, 3)
+end
+
+-- 🧠 Detect egg position (Part or Model)
+local function getEggRoot(egg)
+	if egg:IsA("Model") then
+		return egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart")
+	elseif egg:IsA("BasePart") then
+		return egg
+	end
 end
 
 -- 🔁 Pet Randomizer w/ Countdown
 task.spawn(function()
 	while true do
 		for _, egg in pairs(Workspace:GetChildren()) do
-			if egg:IsA("Part") and petTable[egg.Name] then
-				if not activeESP[egg] then
-					local gui, label = createBillboard("...")
-					gui.Parent = egg
+			if petTable[egg.Name] then
+				local root = getEggRoot(egg)
+				if root and not activeESP[egg] then
+					local gui, label = createBillboard()
+					gui.Parent = root
 					activeESP[egg] = {gui = gui, label = label}
 				end
 
-				local petList = petTable[egg.Name]
-				local chosen = petList[math.random(1, #petList)]
-				activeESP[egg].label.Text = chosen
+				if activeESP[egg] then
+					local pets = petTable[egg.Name]
+					local randomPet = pets[math.random(1, #pets)]
+					activeESP[egg].label.Text = randomPet
 
-				-- ✨ Animation
-				TweenService:Create(activeESP[egg].label, TweenInfo.new(0.5), {
-					TextColor3 = Color3.fromRGB(math.random(200,255), math.random(200,255), 0)
-				}):Play()
+					-- ✨ Animate text color
+					TweenService:Create(activeESP[egg].label, TweenInfo.new(0.5), {
+						TextColor3 = Color3.fromRGB(math.random(200,255), math.random(200,255), 0)
+					}):Play()
 
-				playSound()
+					playSound()
+				end
 			end
 		end
 
-		-- ⏱️ Countdown UI
+		-- ⏳ Show countdown
 		for i = countdownTime, 1, -1 do
-			for _, info in pairs(activeESP) do
-				info.label.Text = "⏳ " .. i
+			for _, data in pairs(activeESP) do
+				data.label.Text = "⏳ " .. i
 			end
 			wait(1)
 		end
