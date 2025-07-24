@@ -1,11 +1,12 @@
--- Services
+-- SERVICES
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
+local camera = Workspace.CurrentCamera
 
--- Data tables
+-- DATA
 local petTable = {
     ["Common Egg"] = { "Dog", "Bunny", "Golden Lab" },
     ["Uncommon Egg"] = { "Black Bunny", "Chicken", "Cat", "Deer" },
@@ -25,7 +26,11 @@ local mutationTypes = {
     "IronSkin", "Radiant", "Rainbow", "Shocked", "Ascended"
 }
 
--- UI Creation
+-- CONSTANTS
+local MAX_DISTANCE = 100 -- studs
+
+-- UI SETUP (Same as before)
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "EggRandomizerUI"
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
@@ -62,87 +67,94 @@ local function createButton(text, yPos)
     return btn
 end
 
-local btnToggleESP = createButton("Toggle Egg ESP: OFF", 40)
-local btnToggleMutation = createButton("Toggle Mutation Finder: OFF", 80)
+local btnESP = createButton("Egg ESP: OFF", 40)
+local btnMutation = createButton("Mutation Finder: OFF", 80)
 local btnManualRandomize = createButton("Manual Randomize Eggs", 120)
 local btnAutoRandomize = createButton("Auto Randomize: OFF", 160)
 
--- State
+-- STATE
 local espEnabled = false
 local mutationEnabled = false
 local autoRandomize = false
+local eggPreviews = {} -- eggModel -> petName
+local autoRandomizeTimer = 0
+local AUTO_RANDOMIZE_INTERVAL = 10
 
-local eggPreviews = {} -- eggModel => petName
+local eggESPCache = {}
+local mutationTagCache = {}
 
--- HELPER FUNCTIONS
+-- UTILITIES
 
--- Remove all ESP labels from eggs
-local function clearESP()
-    for _, egg in pairs(Workspace:GetDescendants()) do
-        if egg:IsA("Model") and petTable[egg.Name] then
-            local primaryPart = egg:FindFirstChild("Main") or egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart")
-            if primaryPart then
-                local esp = primaryPart:FindFirstChild("EggESP")
-                if esp then esp:Destroy() end
-            end
-        end
-    end
+local function isInRange(part)
+    if not part or not part.Position then return false end
+    local dist = (camera.CFrame.Position - part.Position).Magnitude
+    return dist <= MAX_DISTANCE
 end
 
--- Create or update ESP label for an egg
-local function setESP(eggModel, petName)
-    local primaryPart = eggModel:FindFirstChild("Main") or eggModel.PrimaryPart or eggModel:FindFirstChildWhichIsA("BasePart")
-    if not primaryPart then return end
+local function createESP(eggModel, petName)
+    local part = eggModel:FindFirstChild("Main") or eggModel.PrimaryPart or eggModel:FindFirstChildWhichIsA("BasePart")
+    if not part then return nil end
 
-    local esp = primaryPart:FindFirstChild("EggESP")
-    if esp and esp:IsA("BillboardGui") then
-        local label = esp:FindFirstChildOfClass("TextLabel")
-        if label then label.Text = petName end
-    else
-        esp = Instance.new("BillboardGui")
-        esp.Name = "EggESP"
-        esp.Adornee = primaryPart
-        esp.Size = UDim2.new(0, 140, 0, 30)
-        esp.StudsOffset = Vector3.new(0, 2.5, 0)
-        esp.AlwaysOnTop = true
+    local esp = Instance.new("BillboardGui")
+    esp.Name = "EggESP"
+    esp.Adornee = part
+    esp.Size = UDim2.new(0, 180, 0, 40)
+    esp.StudsOffset = Vector3.new(0, 3, 0)
+    esp.AlwaysOnTop = true
 
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 1
-        label.TextColor3 = Color3.new(1, 1, 0)
-        label.TextStrokeTransparency = 0.5
-        label.TextScaled = true
-        label.Font = Enum.Font.SourceSansBold
-        label.Text = petName
-        label.Parent = esp
+    local bg = Instance.new("Frame")
+    bg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    bg.BackgroundTransparency = 0.3
+    bg.Size = UDim2.new(1, 0, 1, 0)
+    bg.BorderSizePixel = 0
+    bg.AnchorPoint = Vector2.new(0, 0)
+    bg.Position = UDim2.new(0, 0, 0, 0)
+    bg.Parent = esp
 
-        esp.Parent = primaryPart
-    end
+    local label = Instance.new("TextLabel")
+    label.Name = "TextLabel"
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(1, -10, 1, -10)
+    label.Position = UDim2.new(0, 5, 0, 5)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 24
+    label.TextColor3 = Color3.fromRGB(255, 215, 0) -- golden
+    label.TextStrokeColor3 = Color3.new(0, 0, 0) -- black outline
+    label.TextStrokeTransparency = 0
+    label.Text = petName
+    label.TextScaled = false
+    label.RichText = false
+    label.TextWrapped = true
+    label.Parent = esp
+
+    local shadow = Instance.new("TextLabel")
+    shadow.Name = "Shadow"
+    shadow.BackgroundTransparency = 1
+    shadow.Size = label.Size
+    shadow.Position = UDim2.new(0, 6, 0, 6)
+    shadow.Font = label.Font
+    shadow.TextSize = label.TextSize
+    shadow.TextColor3 = Color3.new(0, 0, 0)
+    shadow.TextTransparency = 0.5
+    shadow.Text = petName
+    shadow.TextStrokeTransparency = 1
+    shadow.TextScaled = false
+    shadow.TextWrapped = true
+    shadow.ZIndex = label.ZIndex - 1
+    shadow.Parent = esp
+
+    esp.Parent = part
+
+    return esp
 end
 
--- Remove all mutation tags in MutationArea
-local function clearMutations()
-    local mutationArea = Workspace:FindFirstChild("MutationArea")
-    if not mutationArea then return end
-
-    for _, pet in pairs(mutationArea:GetChildren()) do
-        if pet:IsA("Model") then
-            local tag = pet:FindFirstChild("MutationTag")
-            if tag then tag:Destroy() end
-        end
-    end
-end
-
--- Add a mutation tag to a pet model
-local function addMutationTag(petModel, mutationName)
-    local primaryPart = petModel:FindFirstChildWhichIsA("BasePart")
-    if not primaryPart then return end
-
-    if petModel:FindFirstChild("MutationTag") then return end
+local function createMutationTag(petModel, mutationName)
+    local part = petModel:FindFirstChildWhichIsA("BasePart")
+    if not part then return nil end
 
     local tag = Instance.new("BillboardGui")
     tag.Name = "MutationTag"
-    tag.Adornee = primaryPart
+    tag.Adornee = part
     tag.Size = UDim2.new(0, 160, 0, 30)
     tag.StudsOffset = Vector3.new(0, 3, 0)
     tag.AlwaysOnTop = true
@@ -158,64 +170,84 @@ local function addMutationTag(petModel, mutationName)
     label.Parent = tag
 
     tag.Parent = petModel
+    return tag
 end
 
--- Update mutation tags for pets in MutationArea
-local function updateMutationTags()
-    local mutationArea = Workspace:FindFirstChild("MutationArea")
-    if not mutationArea then return end
+-- MAIN FUNCTIONS
 
-    for _, pet in pairs(mutationArea:GetChildren()) do
-        if pet:IsA("Model") then
-            if not pet:FindFirstChild("MutationTag") then
-                local mutation = mutationTypes[math.random(#mutationTypes)]
-                addMutationTag(pet, mutation)
-            end
+local function clearESP()
+    for eggModel, esp in pairs(eggESPCache) do
+        if esp and esp.Parent then
+            esp:Destroy()
         end
     end
+    eggESPCache = {}
 end
 
--- Randomize egg previews
-local function randomizeEggPreviews()
-    eggPreviews = {} -- clear old previews
+local function clearMutations()
+    for petModel, tag in pairs(mutationTagCache) do
+        if tag and tag.Parent then
+            tag:Destroy()
+        end
+    end
+    mutationTagCache = {}
+end
 
+local function randomizeEggPreviews()
+    eggPreviews = {}
+    clearESP()
     for eggName, pets in pairs(petTable) do
         for _, eggModel in pairs(Workspace:GetChildren()) do
             if eggModel:IsA("Model") and eggModel.Name == eggName then
                 local petName = pets[math.random(#pets)]
                 eggPreviews[eggModel] = petName
                 if espEnabled then
-                    setESP(eggModel, petName)
+                    local part = eggModel:FindFirstChild("Main") or eggModel.PrimaryPart or eggModel:FindFirstChildWhichIsA("BasePart")
+                    if part and isInRange(part) then
+                        eggESPCache[eggModel] = createESP(eggModel, petName)
+                    end
                 end
             end
         end
     end
 end
 
--- AUTO RANDOMIZER SETUP
-local autoRandomizeTimer = 0
-local AUTO_RANDOMIZE_INTERVAL = 10
+local function updateMutationTags()
+    clearMutations()
+    local mutationArea = Workspace:FindFirstChild("MutationArea")
+    if not mutationArea then return end
 
--- BUTTON FUNCTIONS
+    for _, pet in pairs(mutationArea:GetChildren()) do
+        if pet:IsA("Model") then
+            local part = pet:FindFirstChildWhichIsA("BasePart")
+            if part and isInRange(part) then
+                local mutation = mutationTypes[math.random(#mutationTypes)]
+                mutationTagCache[pet] = createMutationTag(pet, mutation)
+            end
+        end
+    end
+end
 
-btnToggleESP.MouseButton1Click:Connect(function()
+-- BUTTON HANDLERS
+
+btnESP.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     if espEnabled then
-        btnToggleESP.Text = "Toggle Egg ESP: ON"
+        btnESP.Text = "Egg ESP: ON"
         randomizeEggPreviews()
     else
-        btnToggleESP.Text = "Toggle Egg ESP: OFF"
+        btnESP.Text = "Egg ESP: OFF"
         clearESP()
     end
 end)
 
-btnToggleMutation.MouseButton1Click:Connect(function()
+btnMutation.MouseButton1Click:Connect(function()
     mutationEnabled = not mutationEnabled
     if mutationEnabled then
-        btnToggleMutation.Text = "Toggle Mutation Finder: ON"
+        btnMutation.Text = "Mutation Finder: ON"
         updateMutationTags()
     else
-        btnToggleMutation.Text = "Toggle Mutation Finder: OFF"
+        btnMutation.Text = "Mutation Finder: OFF"
         clearMutations()
     end
 end)
@@ -235,22 +267,20 @@ btnAutoRandomize.MouseButton1Click:Connect(function()
 end)
 
 -- MAIN LOOP
+
 RunService.RenderStepped:Connect(function(dt)
+    -- Mutation tags update every 5 seconds
     if mutationEnabled then
-        updateMutationTags()
+        autoRandomizeTimer = autoRandomizeTimer + dt
+        if autoRandomizeTimer >= 5 then
+            updateMutationTags()
+            autoRandomizeTimer = 0
+        end
     else
         clearMutations()
     end
 
-    if espEnabled then
-        -- Keep ESP updated if eggPreviews changed
-        for eggModel, petName in pairs(eggPreviews) do
-            setESP(eggModel, petName)
-        end
-    else
-        clearESP()
-    end
-
+    -- Auto randomize eggs every AUTO_RANDOMIZE_INTERVAL seconds
     if autoRandomize then
         autoRandomizeTimer = autoRandomizeTimer + dt
         if autoRandomizeTimer >= AUTO_RANDOMIZE_INTERVAL then
