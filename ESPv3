@@ -1,6 +1,4 @@
--- DEBUG: Confirm script runs
-print("Egg ESP script running!")
-
+-- Egg and mutation pet data
 local eggPets = {
     ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
     ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
@@ -20,6 +18,18 @@ local eggPets = {
     ["Primal Egg"] = {"Parasaurolophus", "Iguanodon", "Pachycephalosaurus", "Dilophosaurus", "Ankylosaurus", "Spinosaurus"},
 }
 
+-- Mutation pets (adjust as needed)
+local mutationPets = {
+    ["Red Giant Ant"] = true,
+    ["Disco Bee"] = true,
+    ["Echo Frog"] = true,
+    ["Silver Monkey"] = true,
+    ["Tanchozuru"] = true,
+    ["Queen Bee"] = true,
+    ["T-Rex"] = true,
+    ["Spinosaurus"] = true,
+}
+
 local autoRandomize = false
 local espEnabled = true
 local allEggs = {}
@@ -32,16 +42,14 @@ local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- GUI setup
+-- Create GUI
 local gui = Instance.new("ScreenGui")
 gui.Name = "EggESP"
 gui.ResetOnSpawn = false
 gui.Parent = playerGui
 
-print("GUI created:", gui.Name)
-
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 140)
+frame.Size = UDim2.new(0, 300, 0, 160)
 frame.Position = UDim2.new(0.7, 0, 0.3, 0)
 frame.BackgroundColor3 = Color3.fromRGB(40, 0, 60)
 frame.BackgroundTransparency = 0.2
@@ -61,7 +69,7 @@ titleLabel.TextSize = 20
 titleLabel.Text = "👁️Egg Randomizer"
 titleLabel.Parent = frame
 
--- Button creator function
+-- Button creator
 local function createButton(text, yPos, color)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0.9, 0, 0, 40)
@@ -78,20 +86,7 @@ end
 local autoBtn = createButton("🔄 Auto Randomize: OFF", 40, Color3.fromRGB(80, 160, 80))
 local espBtn = createButton("👁️ ESP: ON", 90, Color3.fromRGB(100, 100, 100))
 
-autoBtn.MouseButton1Click:Connect(function()
-	autoRandomize = not autoRandomize
-	autoBtn.Text = autoRandomize and "🔄 Auto Randomize: ON" or "🔄 Auto Randomize: OFF"
-end)
-
-espBtn.MouseButton1Click:Connect(function()
-	espEnabled = not espEnabled
-	espBtn.Text = espEnabled and "👁️ ESP: ON" or "👁️ ESP: OFF"
-	for _, egg in pairs(allEggs) do
-		if egg.esp then egg.esp.Enabled = espEnabled end
-	end
-end)
-
--- Attach ESP label
+-- Attach ESP label to egg
 local function attachESP(model, part, petName)
 	local oldESP = part:FindFirstChild("ESPLabel")
 	if oldESP then oldESP:Destroy() end
@@ -118,6 +113,7 @@ local function attachESP(model, part, petName)
 	return label, gui
 end
 
+-- Process egg model
 local function processEgg(obj)
 	local petList = eggPets[obj.Name]
 	if not petList then return end
@@ -127,16 +123,14 @@ local function processEgg(obj)
 	if part:FindFirstChild("ESPLabel") then return end
 
 	local pet = petList[math.random(1, #petList)]
-	print("Creating ESP for egg:", obj.Name, "pet:", pet)
 	local label, gui = attachESP(obj, part, pet)
 	table.insert(allEggs, {model = obj, label = label, esp = gui, pets = petList})
 end
 
--- Recursive search for eggs (including nested folders)
+-- Find eggs recursively
 local function findEggsRecursive(folder)
 	for _, obj in ipairs(folder:GetChildren()) do
 		if obj:IsA("Model") and eggPets[obj.Name] then
-			print("Found egg model:", obj.Name)
 			processEgg(obj)
 		elseif obj:IsA("Folder") or obj:IsA("Model") then
 			findEggsRecursive(obj)
@@ -144,10 +138,8 @@ local function findEggsRecursive(folder)
 	end
 end
 
--- Initial scan
 findEggsRecursive(Workspace)
 
--- New egg detection
 Workspace.DescendantAdded:Connect(function(obj)
 	if obj:IsA("Model") and eggPets[obj.Name] then
 		task.wait(0.5)
@@ -155,14 +147,108 @@ Workspace.DescendantAdded:Connect(function(obj)
 	end
 end)
 
--- Auto randomize loop with 10 seconds cooldown
+-- Randomize all eggs pets label
+local function randomizeAllEggs()
+	for _, egg in pairs(allEggs) do
+		egg.label.Text = egg.pets[math.random(1, #egg.pets)]
+	end
+end
+
+-- Auto randomize cooldown timer
+local cooldownTime = 10
+local cooldownCounter = cooldownTime
+
+autoBtn.MouseButton1Click:Connect(function()
+	autoRandomize = not autoRandomize
+	if autoRandomize then
+		randomizeAllEggs() -- immediate randomize on toggle ON
+		cooldownCounter = cooldownTime
+		autoBtn.Text = "🔄 Auto Randomize: ON (" .. cooldownCounter .. "s)"
+	else
+		autoBtn.Text = "🔄 Auto Randomize: OFF"
+	end
+end)
+
+espBtn.MouseButton1Click:Connect(function()
+	espEnabled = not espEnabled
+	espBtn.Text = espEnabled and "👁️ ESP: ON" or "👁️ ESP: OFF"
+	for _, egg in pairs(allEggs) do
+		if egg.esp then egg.esp.Enabled = espEnabled end
+	end
+
+	-- Also toggle Mutation ESP visibility
+	for _, gui in pairs(Workspace:GetDescendants()) do
+		if gui:IsA("BillboardGui") and gui.Name == "MutationESP" then
+			gui.Enabled = espEnabled
+		end
+	end
+end)
+
+-- Auto randomize loop with cooldown and countdown
 task.spawn(function()
 	while true do
 		if autoRandomize then
-			for _, egg in pairs(allEggs) do
-				egg.label.Text = egg.pets[math.random(1, #egg.pets)]
+			if cooldownCounter <= 0 then
+				randomizeAllEggs()
+				cooldownCounter = cooldownTime
 			end
+			autoBtn.Text = "🔄 Auto Randomize: ON (" .. cooldownCounter .. "s)"
+			cooldownCounter = cooldownCounter - 1
+		else
+			cooldownCounter = cooldownTime
 		end
-		task.wait(10)  -- 10 seconds cooldown here
+		task.wait(1)
 	end
 end)
+
+-- Mutation Pets ESP in "Pet Mutations" area (next to Egg Shop)
+local mutationAreaName = "Pet Mutations"
+local mutationArea = Workspace:FindFirstChild(mutationAreaName)
+if not mutationArea then
+	warn("Mutation area '" .. mutationAreaName .. "' not found in Workspace!")
+else
+	local function createMutationESP(petModel)
+		local part = petModel.PrimaryPart or petModel:FindFirstChildWhichIsA("BasePart")
+		if not part then return end
+		if part:FindFirstChild("MutationESP") then return end
+
+		local gui = Instance.new("BillboardGui")
+		gui.Name = "MutationESP"
+		gui.Adornee = part
+		gui.Size = UDim2.new(0, 150, 0, 40)
+		gui.StudsOffset = Vector3.new(0, 3, 0)
+		gui.AlwaysOnTop = true
+		gui.Enabled = espEnabled
+
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 0.6
+		label.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+		label.TextColor3 = Color3.new(1, 1, 1)
+		label.Font = Enum.Font.GothamBold
+		label.TextScaled = true
+		label.Text = petModel.Name .. " (Mutant)"
+		label.Size = UDim2.new(1, 0, 1, 0)
+		label.Parent = gui
+
+		gui.Parent = part
+	end
+
+	-- Scan existing mutation pets
+	local function scanMutationPets()
+		for _, obj in ipairs(mutationArea:GetChildren()) do
+			if obj:IsA("Model") and mutationPets[obj.Name] then
+				createMutationESP(obj)
+			end
+		end
+	end
+
+	scanMutationPets()
+
+	-- Detect new mutation pets added dynamically
+	mutationArea.ChildAdded:Connect(function(child)
+		if child:IsA("Model") and mutationPets[child.Name] then
+			task.wait(0.3)
+			createMutationESP(child)
+		end
+	end)
+end
