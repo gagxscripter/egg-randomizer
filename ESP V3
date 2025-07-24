@@ -1,0 +1,163 @@
+-- SETTINGS: Egg and Pet Table
+local eggPets = {
+    ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
+    ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
+    ["Rare Egg"] = {"Orange Tabby", "Spotted Deer", "Pig", "Rooster", "Monkey"},
+    ["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"},
+    ["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"},
+    ["Bug Egg"] = {"Snail", "Giant Ant", "Caterpillar", "Praying Mantis", "Dragonfly"},
+    ["Night Egg"] = {"Hedgehog", "Mole", "Frog", "Echo Frog", "Night Owl", "Raccoon"},
+    ["Bee Egg"] = {"Bee", "Honey Bee", "Bear Bee", "Petal Bee", "Queen Bee"},
+    ["Anti‑Bee Egg"] = {"Wasp", "Tarantula Hawk", "Moth", "Butterfly", "Disco Bee"},
+    ["Common Summer Egg"] = {"Starfish", "Seagull", "Crab"},
+    ["Rare Summer Egg"] = {"Flamingo", "Toucan", "Sea Turtle", "Orangutan", "Seal"},
+    ["Paradise Egg"] = {"Ostrich", "Peacock", "Capybara", "Scarlet Macaw", "Mimic Octopus"},
+    ["Oasis Egg"] = {"Meerkat", "Sand Snake", "Axolotl", "Hyacinth Macaw", "Fennec Fox"},
+    ["Zen Egg"] = {"Shiba Inu", "Nihonzaru", "Tanuki", "Tanchozuru", "Kappa", "Kitsune"},
+    ["Dinosaur Egg"] = {"Raptor", "Triceratops", "Stegosaurus", "Pterodactyl", "Brontosaurus", "T-Rex"},
+    ["Primal Egg"] = {"Parasaurolophus", "Iguanodon", "Pachycephalosaurus", "Dilophosaurus", "Ankylosaurus", "Spinosaurus"},
+}
+
+-- Variables
+local autoRandomize = false
+local espEnabled = true
+
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local workspace = game:GetService("Workspace")
+local UIS = game:GetService("UserInputService")
+
+-- UI Setup
+local gui = Instance.new("ScreenGui", playerGui)
+gui.Name = "EggESPVisualizer"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 320)
+frame.Position = UDim2.new(0.7, 0, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(40, 0, 60)
+frame.BackgroundTransparency = 0.2
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Parent = gui
+
+-- Dragging UI
+local dragging, dragInput, dragStart, startPos
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+frame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+UIS.InputChanged:Connect(function(input)
+	if dragging and input == dragInput then
+		local delta = input.Position - dragStart
+		frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+-- UI Buttons
+local function createButton(text, yPos, color)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0.9, 0, 0, 40)
+	btn.Position = UDim2.new(0.05, 0, 0, yPos)
+	btn.BackgroundColor3 = color
+	btn.Text = text
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.TextSize = 16
+	btn.Font = Enum.Font.GothamBold
+	btn.Parent = frame
+	return btn
+end
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundColor3 = Color3.fromRGB(120, 0, 120)
+title.Text = "😈 Egg Visualizer ESP"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 18
+title.TextWrapped = true
+title.Font = Enum.Font.GothamBold
+
+local autoBtn = createButton("🔄 Auto Randomize: OFF", 50, Color3.fromRGB(80, 160, 80))
+local espBtn = createButton("👁️ ESP: ON", 100, Color3.fromRGB(100, 100, 100))
+
+-- Button Logic
+autoBtn.MouseButton1Click:Connect(function()
+	autoRandomize = not autoRandomize
+	autoBtn.Text = autoRandomize and "🔄 Auto Randomize: ON" or "🔄 Auto Randomize: OFF"
+end)
+
+espBtn.MouseButton1Click:Connect(function()
+	espEnabled = not espEnabled
+	espBtn.Text = espEnabled and "👁️ ESP: ON" or "👁️ ESP: OFF"
+end)
+
+-- Create ESP above an egg
+local function createESP(egg, petName)
+	if egg:FindFirstChild("ESPLabel") then return end
+
+	local bbGui = Instance.new("BillboardGui")
+	bbGui.Name = "ESPLabel"
+	bbGui.Adornee = egg
+	bbGui.Size = UDim2.new(0, 100, 0, 30)
+	bbGui.StudsOffset = Vector3.new(0, 2, 0)
+	bbGui.AlwaysOnTop = true
+
+	local label = Instance.new("TextLabel", bbGui)
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = Color3.new(1, 1, 1)
+	label.Font = Enum.Font.GothamBold
+	label.TextScaled = true
+	label.Text = petName
+
+	bbGui.Parent = egg
+end
+
+-- Randomize all egg ESPs
+local function randomizeAllESPs()
+	for eggName, petList in pairs(eggPets) do
+		for _, egg in ipairs(workspace:GetDescendants()) do
+			if egg:IsA("BasePart") and egg.Name == eggName then
+				local label = egg:FindFirstChild("ESPLabel") and egg.ESPLabel:FindFirstChildOfClass("TextLabel")
+				if label then
+					label.Text = petList[math.random(1, #petList)]
+				end
+			end
+		end
+	end
+end
+
+-- Main loop: attach ESPs and randomize if enabled
+RunService.RenderStepped:Connect(function()
+	if not espEnabled then return end
+	for eggName, petList in pairs(eggPets) do
+		for _, egg in ipairs(workspace:GetDescendants()) do
+			if egg:IsA("BasePart") and egg.Name == eggName then
+				if not egg:FindFirstChild("ESPLabel") then
+					local petName = petList[math.random(1, #petList)]
+					createESP(egg, petName)
+				end
+			end
+		end
+	end
+
+	if autoRandomize and tick() % 1 < 0.05 then
+		randomizeAllESPs()
+	end
+end)
