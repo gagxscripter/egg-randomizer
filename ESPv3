@@ -1,172 +1,95 @@
--- ✅ Fully Working Pet Randomizer ESP with Countdown, Icon, Sound, and UI
+-- ✅ Ultimate Pet Randomizer ESP with Countdown, Icon, Sound, and Animation
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
 
 local player = Players.LocalPlayer
+local camera = Workspace.CurrentCamera
 local playerGui = player:WaitForChild("PlayerGui")
 
--- 🐾 Egg to pet mappings (with name + icon)
+-- 🐾 Complete Egg → Pet Mappings
 local petTable = {
-    ["Common Egg"] = {
-        {name = "Golden Lab", icon = "rbxassetid://12222225"},
-        {name = "Dog", icon = "rbxassetid://911882948"},
-        {name = "Cat", icon = "rbxassetid://23456789"},
-    },
-    ["Uncommon Egg"] = {
-        {name = "Shiba", icon = "rbxassetid://11223344"},
-        {name = "Parrot", icon = "rbxassetid://44332211"},
-        {name = "Mouse", icon = "rbxassetid://99887766"},
-    },
-    ["Legendary Egg"] = {
-        {name = "Dragon", icon = "rbxassetid://184718604"},
-        {name = "Unicorn", icon = "rbxassetid://12222225"},
-        {name = "Lion", icon = "rbxassetid://911882310"},
-    },
+	["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
+	["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
+	["Rare Egg"] = {"Orange Tabby", "Spotted Deer", "Pig", "Rooster", "Monkey"},
+	["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"},
+	["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"},
+	["Bug Egg"] = {"Snail", "Giant Ant", "Caterpillar", "Praying Mantis", "Dragonfly"},
+	["Night Egg"] = {"Hedgehog", "Mole", "Frog", "Echo Frog", "Night Owl", "Raccoon"},
+	["Bee Egg"] = {"Bee", "Honey Bee", "Bear Bee", "Petal Bee", "Queen Bee"},
+	["Anti‑Bee Egg"] = {"Wasp", "Tarantula Hawk", "Moth", "Butterfly", "Disco Bee"},
+	["Common Summer Egg"] = {"Starfish", "Seagull", "Crab"},
+	["Rare Summer Egg"] = {"Flamingo", "Toucan", "Sea Turtle", "Orangutan", "Seal"},
+	["Paradise Egg"] = {"Ostrich", "Peacock", "Capybara", "Scarlet Macaw", "Mimic Octopus"},
+	["Oasis Egg"] = {"Meerkat", "Sand Snake", "Axolotl", "Hyacinth Macaw", "Fennec Fox"},
+	["Zen Egg"] = {"Shiba Inu", "Nihonzaru", "Tanuki", "Tanchozuru", "Kappa", "Kitsune"},
+	["Dinosaur Egg"] = {"Raptor", "Triceratops", "Stegosaurus", "Pterodactyl", "Brontosaurus", "T-Rex"},
+	["Primal Egg"] = {"Parasaurolophus", "Iguanodon", "Pachycephalosaurus", "Dilophosaurus", "Ankylosaurus", "Spinosaurus"},
 }
 
--- 🧠 Track ESPs
-local eggLabels = {}
-local autoReroll = false
-local cooldownTime = 10
-local currentCooldown = cooldownTime
+local countdownTime = 10
+local activeESP = {}
 
--- 🎮 UI Setup
-local screenGui = Instance.new("ScreenGui", playerGui)
-screenGui.Name = "PetRandomizerUI"
-screenGui.ResetOnSpawn = false
+-- 📦 Billboard GUI
+local function createBillboard(name)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Size = UDim2.new(0, 100, 0, 40)
+	billboard.StudsOffset = Vector3.new(0, 3, 0)
+	billboard.AlwaysOnTop = true
 
-local frame = Instance.new("Frame", screenGui)
-frame.Position = UDim2.new(0, 10, 0, 10)
-frame.Size = UDim2.new(0, 220, 0, 80)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BorderSizePixel = 0
-frame.BackgroundTransparency = 0.2
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = Color3.fromRGB(255, 255, 0)
+	label.TextScaled = true
+	label.Text = name
+	label.Font = Enum.Font.GothamBold
+	label.Parent = billboard
 
-local title = Instance.new("TextLabel", frame)
-title.Text = "PET RANDOMIZER"
-title.Size = UDim2.new(1, 0, 0.4, 0)
-title.TextScaled = true
-title.BackgroundTransparency = 1
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Font = Enum.Font.GothamBold
-
-local toggle = Instance.new("TextButton", frame)
-toggle.Text = "AUTO REROLL: OFF"
-toggle.Position = UDim2.new(0, 0, 0.4, 0)
-toggle.Size = UDim2.new(1, 0, 0.3, 0)
-toggle.TextScaled = true
-toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggle.Font = Enum.Font.Gotham
-
-local countdownLabel = Instance.new("TextLabel", frame)
-countdownLabel.Text = "Cooldown: 10s"
-countdownLabel.Position = UDim2.new(0, 0, 0.7, 0)
-countdownLabel.Size = UDim2.new(1, 0, 0.3, 0)
-countdownLabel.TextScaled = true
-countdownLabel.BackgroundTransparency = 1
-countdownLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
-countdownLabel.Font = Enum.Font.GothamSemibold
-
--- 🔁 Toggle Button Logic
-toggle.MouseButton1Click:Connect(function()
-    autoReroll = not autoReroll
-    toggle.Text = "AUTO REROLL: " .. (autoReroll and "ON" or "OFF")
-    if autoReroll then
-        currentCooldown = cooldownTime
-    else
-        countdownLabel.Text = "Cooldown: OFF"
-    end
-end)
-
--- 🔊 Play sound effect at egg
-local function playSoundAt(egg)
-    local existing = egg:FindFirstChild("RerollSound")
-    if existing then existing:Destroy() end
-
-    local sound = Instance.new("Sound")
-    sound.Name = "RerollSound"
-    sound.SoundId = "rbxassetid://911882310" -- Sparkle sound
-    sound.Volume = 1
-    sound.PlayOnRemove = true
-    sound.Parent = egg
-    sound:Destroy() -- This plays the sound
+	return billboard, label
 end
 
--- ✨ Create or update ESP label
-local function updateLabel(egg)
-    local pets = petTable[egg.Name]
-    if not pets then return end
-    local chosen = pets[math.random(1, #pets)]
-
-    local gui = eggLabels[egg]
-    if not gui then
-        local billboard = Instance.new("BillboardGui")
-        billboard.Name = "PetESP"
-        billboard.Size = UDim2.new(0, 150, 0, 60)
-        billboard.AlwaysOnTop = true
-        billboard.StudsOffset = Vector3.new(0, 2, 0)
-        billboard.Parent = egg
-
-        local icon = Instance.new("ImageLabel")
-        icon.Name = "PetIcon"
-        icon.Size = UDim2.new(0, 40, 0, 40)
-        icon.Position = UDim2.new(0, 0, 0.1, 0)
-        icon.BackgroundTransparency = 1
-        icon.Image = ""
-        icon.ImageTransparency = 1
-        icon.Parent = billboard
-
-        local text = Instance.new("TextLabel")
-        text.Name = "PetName"
-        text.Size = UDim2.new(1, -45, 1, 0)
-        text.Position = UDim2.new(0, 45, 0, 0)
-        text.BackgroundTransparency = 1
-        text.TextScaled = true
-        text.TextColor3 = Color3.new(1, 1, 1)
-        text.Font = Enum.Font.GothamBold
-        text.Text = ""
-        text.TextTransparency = 1
-        text.Parent = billboard
-
-        eggLabels[egg] = billboard
-        gui = billboard
-    end
-
-    local icon = gui:FindFirstChild("PetIcon")
-    local text = gui:FindFirstChild("PetName")
-
-    -- Animate fade-out
-    TweenService:Create(text, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
-    TweenService:Create(icon, TweenInfo.new(0.3), {ImageTransparency = 1}):Play()
-    task.wait(0.3)
-
-    -- Set new values
-    text.Text = chosen.name
-    icon.Image = chosen.icon
-
-    -- Animate fade-in
-    TweenService:Create(text, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
-    TweenService:Create(icon, TweenInfo.new(0.3), {ImageTransparency = 0}):Play()
+-- 🔊 Play sound
+local function playSound()
+	local sound = Instance.new("Sound", SoundService)
+	sound.SoundId = "rbxassetid://9118823101" -- Replace with your preferred sound
+	sound.Volume = 2
+	sound:Play()
+	game.Debris:AddItem(sound, 3)
 end
 
--- 🔁 Main Reroll Loop
+-- 🔁 Pet Randomizer w/ Countdown
 task.spawn(function()
-    while true do
-        task.wait(1)
-        if autoReroll then
-            currentCooldown -= 1
-            countdownLabel.Text = "Cooldown: " .. currentCooldown .. "s"
-            if currentCooldown <= 0 then
-                for _, egg in ipairs(Workspace:GetDescendants()) do
-                    if egg:IsA("Model") and petTable[egg.Name] then
-                        updateLabel(egg)
-                        playSoundAt(egg)
-                    end
-                end
-                currentCooldown = cooldownTime
-            end
-        end
-    end
+	while true do
+		for _, egg in pairs(Workspace:GetChildren()) do
+			if egg:IsA("Part") and petTable[egg.Name] then
+				if not activeESP[egg] then
+					local gui, label = createBillboard("...")
+					gui.Parent = egg
+					activeESP[egg] = {gui = gui, label = label}
+				end
+
+				local petList = petTable[egg.Name]
+				local chosen = petList[math.random(1, #petList)]
+				activeESP[egg].label.Text = chosen
+
+				-- ✨ Animation
+				TweenService:Create(activeESP[egg].label, TweenInfo.new(0.5), {
+					TextColor3 = Color3.fromRGB(math.random(200,255), math.random(200,255), 0)
+				}):Play()
+
+				playSound()
+			end
+		end
+
+		-- ⏱️ Countdown UI
+		for i = countdownTime, 1, -1 do
+			for _, info in pairs(activeESP) do
+				info.label.Text = "⏳ " .. i
+			end
+			wait(1)
+		end
+	end
 end)
