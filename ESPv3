@@ -20,7 +20,7 @@ local eggPets = {
 
 local autoRandomize = false
 local espEnabled = true
-local allEggs = {} -- stores egg models and ESPs
+local allEggs = {}
 
 -- Services
 local Players = game:GetService("Players")
@@ -42,36 +42,10 @@ frame.BackgroundColor3 = Color3.fromRGB(40, 0, 60)
 frame.BackgroundTransparency = 0.2
 frame.BorderSizePixel = 0
 frame.Active = true
+frame.Draggable = true
 frame.Parent = gui
 
--- Drag logic
-local dragging, dragInput, dragStart, startPos
-frame.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		dragStart = input.Position
-		startPos = frame.Position
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then dragging = false end
-		end)
-	end
-end)
-
-frame.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-		dragInput = input
-	end
-end)
-
-UIS.InputChanged:Connect(function(input)
-	if dragging and input == dragInput then
-		local delta = input.Position - dragStart
-		frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-			startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-	end
-end)
-
--- UI Buttons
+-- Button creator
 local function createButton(text, yPos, color)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0.9, 0, 0, 40)
@@ -88,6 +62,7 @@ end
 local autoBtn = createButton("🔄 Auto Randomize: OFF", 10, Color3.fromRGB(80, 160, 80))
 local espBtn = createButton("👁️ ESP: ON", 60, Color3.fromRGB(100, 100, 100))
 
+-- Button actions
 autoBtn.MouseButton1Click:Connect(function()
 	autoRandomize = not autoRandomize
 	autoBtn.Text = autoRandomize and "🔄 Auto Randomize: ON" or "🔄 Auto Randomize: OFF"
@@ -101,13 +76,16 @@ espBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- ESP Creation
-local function attachESP(eggModel, displayPart, petName)
+-- Attach ESP to an egg model
+local function attachESP(model, part, petName)
+	local oldESP = part:FindFirstChild("ESPLabel")
+	if oldESP then oldESP:Destroy() end
+
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "ESPLabel"
-	gui.Adornee = displayPart
+	gui.Adornee = part
 	gui.Size = UDim2.new(0, 100, 0, 30)
-	gui.StudsOffset = Vector3.new(0, 2, 0)
+	gui.StudsOffset = Vector3.new(0, 3, 0)
 	gui.AlwaysOnTop = true
 
 	local label = Instance.new("TextLabel", gui)
@@ -118,29 +96,32 @@ local function attachESP(eggModel, displayPart, petName)
 	label.TextScaled = true
 	label.Text = petName
 
-	gui.Parent = displayPart
+	gui.Enabled = espEnabled
+	gui.Parent = part
 	return label, gui
 end
 
--- Scan once to find eggs and attach ESP
-for eggName, petList in pairs(eggPets) do
-	for _, obj in ipairs(Workspace:GetChildren()) do
-		if obj:IsA("Model") and obj.Name == eggName then
-			local part = obj:FindFirstChildWhichIsA("BasePart")
-			if part and not obj:FindFirstChild("ESPLabel") then
-				local pet = petList[math.random(1, #petList)]
-				local label, gui = attachESP(obj, part, pet)
-				table.insert(allEggs, {model = obj, label = label, esp = gui, pets = petList})
-			end
-		end
+-- Create ESP on a valid egg
+local function processEgg(obj)
+	local petList = eggPets[obj.Name]
+	if not petList then return end
+
+	local part = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+	if not part then return end
+	if part:FindFirstChild("ESPLabel") then return end
+
+	local pet = petList[math.random(1, #petList)]
+	local label, gui = attachESP(obj, part, pet)
+	table.insert(allEggs, {model = obj, label = label, esp = gui, pets = petList})
+end
+
+-- Initial scan for eggs
+for _, obj in ipairs(Workspace:GetChildren()) do
+	if obj:IsA("Model") and eggPets[obj.Name] then
+		processEgg(obj)
 	end
 end
 
--- Auto Randomize Loop (only updates existing ESPs)
-RunService.RenderStepped:Connect(function()
-	if autoRandomize and tick() % 1 < 0.05 then
-		for _, egg in pairs(allEggs) do
-			egg.label.Text = egg.pets[math.random(1, #egg.pets)]
-		end
-	end
-end)
+-- Handle newly spawned eggs
+Workspace.ChildAdded:Connect(function(obj)
+	if obj
