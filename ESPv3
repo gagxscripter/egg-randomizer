@@ -1,22 +1,19 @@
--- ✅ Ultimate Pet Randomizer ESPv3 with Countdown, Icon, Sound, Animation
--- 🔁 Auto-load ESPv2 when ESPv3 is activated
+-- ✅ Ultimate Pet Randomizer ESPv3 with Countdown, Icons, Sound, Animation
+-- 🔁 Auto-load ESPv2
 
-local success, err = pcall(function()
+pcall(function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/gagxscripter/egg-pet-randomizer/refs/heads/main/ESPv2"))()
 end)
 
-if not success then
-    warn("ESPv2 failed to load: " .. tostring(err))
-end
-
 local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+-- 🐾 Egg to pet mappings
 local petTable = {
     ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
     ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
@@ -29,75 +26,76 @@ local petTable = {
     ["Magic Egg"] = {"Fairy", "Wizard Cat", "Magical Deer", "Crystal Mouse", "Kitsune"}
 }
 
+-- 🖼️ Icons for each pet
 local icons = {
     ["Golden Lab"] = "🐶", ["Dog"] = "🐕", ["Bunny"] = "🐰", ["Black Bunny"] = "⚫🐰", ["Chicken"] = "🐔",
     ["Cat"] = "🐱", ["Deer"] = "🦌", ["Orange Tabby"] = "🧡🐱", ["Spotted Deer"] = "🌟🦌",
     ["Pig"] = "🐷", ["Rooster"] = "🐓", ["Monkey"] = "🐒", ["Cow"] = "🐄", ["Silver Monkey"] = "🥈🐒",
-    ["Sea Otter"] = "🦦", ["Turtle"] = "🐢", ["Polar Bear"] = "🐻‍❄️", ["Grey Mouse"] = "🐭", ["Brown Mouse"] = "🟤🐭",
-    ["Squirrel"] = "🐿️", ["Red Giant Ant"] = "🐜", ["Red Fox"] = "🦊", ["Ant"] = "🐜", ["Ladybug"] = "🐞",
-    ["Worm"] = "🪱", ["Caterpillar"] = "🐛", ["Dragonfly"] = "🐲", ["Owl"] = "🦉", ["Raccoon"] = "🦝",
-    ["Fox"] = "🦊", ["Boar"] = "🐗", ["Woodpecker"] = "🐦", ["Honey Bee"] = "🍯🐝", ["Bumblebee"] = "🐝",
-    ["Disco Bee"] = "💃🐝", ["Queen Bee"] = "👑🐝", ["Golden Bee"] = "🟡🐝", ["Fairy"] = "🧚", ["Wizard Cat"] = "🎩🐱",
-    ["Magical Deer"] = "🦌✨", ["Crystal Mouse"] = "💎🐭", ["Kitsune"] = "🦊🔥"
+    ["Sea Otter"] = "🦦", ["Turtle"] = "🐢", ["Polar Bear"] = "🐻‍❄️", ["Grey Mouse"] = "🐭",
+    ["Brown Mouse"] = "🟤🐭", ["Squirrel"] = "🐿️", ["Red Giant Ant"] = "🐜", ["Red Fox"] = "🦊",
+    ["Ant"] = "🐜", ["Ladybug"] = "🐞", ["Worm"] = "🪱", ["Caterpillar"] = "🐛", ["Dragonfly"] = "🐲",
+    ["Owl"] = "🦉", ["Raccoon"] = "🦝", ["Fox"] = "🦊", ["Boar"] = "🐗", ["Woodpecker"] = "🐦",
+    ["Honey Bee"] = "🍯🐝", ["Bumblebee"] = "🐝", ["Disco Bee"] = "💃🐝", ["Queen Bee"] = "👑🐝",
+    ["Golden Bee"] = "🟡🐝", ["Fairy"] = "🧚", ["Wizard Cat"] = "🎩🐱", ["Magical Deer"] = "🦌✨",
+    ["Crystal Mouse"] = "💎🐭", ["Kitsune"] = "🦊🔥"
 }
 
--- UI Setup
+-- 🖥️ UI Setup
 local screenGui = Instance.new("ScreenGui", playerGui)
-screenGui.Name = "PetRandomizerUI"
+screenGui.Name = "PetESPv3Gui"
 
 local label = Instance.new("TextLabel", screenGui)
-label.Size = UDim2.new(0, 300, 0, 50)
-label.Position = UDim2.new(0.5, -150, 0.1, 0)
-label.BackgroundTransparency = 0.3
-label.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+label.Size = UDim2.new(0, 350, 0, 50)
+label.Position = UDim2.new(0.5, -175, 0.05, 0)
+label.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 label.TextColor3 = Color3.new(1, 1, 1)
 label.TextScaled = true
+label.BackgroundTransparency = 0.3
 label.Font = Enum.Font.GothamBold
-label.Text = "Randomizing..."
+label.Text = "Starting..."
 
--- Countdown + Randomizer Logic
+-- 🔁 Randomizer Logic
 local countdown = 10
-local currentEgg = nil
+local function randomize()
+    local eggNames = {}
+    for eggName in pairs(petTable) do
+        table.insert(eggNames, eggName)
+    end
 
-RunService.RenderStepped:Connect(function()
-    if countdown > 0 then
-        label.Text = "⏳ Randomizing in " .. countdown .. "s..."
-        wait(1)
-        countdown -= 1
-    else
-        local eggs = {}
-        for egg in pairs(petTable) do
-            table.insert(eggs, egg)
+    local chosenEgg = eggNames[math.random(1, #eggNames)]
+    local pets = petTable[chosenEgg]
+    local pet = pets[math.random(1, #pets)]
+    local icon = icons[pet] or "❓"
+
+    label.Text = chosenEgg .. ": " .. icon .. " " .. pet
+
+    -- 🎨 Animate background
+    local newColor = Color3.fromRGB(math.random(100,255), math.random(100,255), math.random(100,255))
+    TweenService:Create(label, TweenInfo.new(0.3), {BackgroundColor3 = newColor}):Play()
+
+    -- 🔊 Sound effect
+    local sound = Instance.new("Sound", label)
+    sound.SoundId = "rbxassetid://12222030" -- Custom sound ID
+    sound.Volume = 1
+    sound:Play()
+    game.Debris:AddItem(sound, 2)
+end
+
+-- ⏳ Countdown loop
+spawn(function()
+    while true do
+        for i = countdown, 1, -1 do
+            label.Text = "⏳ Randomizing in " .. i .. "s..."
+            wait(1)
         end
-        currentEgg = eggs[math.random(1, #eggs)]
-        local pets = petTable[currentEgg]
-        local pet = pets[math.random(1, #pets)]
-        local icon = icons[pet] or "❓"
-
-        label.Text = currentEgg .. ": " .. icon .. " " .. pet
-
-        -- animate
-        local tween = TweenService:Create(label, TweenInfo.new(0.3), {
-            BackgroundColor3 = Color3.fromRGB(math.random(100,255), math.random(100,255), math.random(100,255))
-        })
-        tween:Play()
-
-        -- sound effect
-        local sound = Instance.new("Sound", playerGui)
-        sound.SoundId = "rbxassetid://12222030" -- Replace with your preferred sound
-        sound.Volume = 2
-        sound:Play()
-        game.Debris:AddItem(sound, 2)
-
-        -- reset countdown
-        countdown = 10
+        randomize()
+        wait(1)
     end
 end)
 
--- Toggle UI with [T] key
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.T then
+-- ⌨️ Toggle UI with [T]
+UserInputService.InputBegan:Connect(function(input, gp)
+    if not gp and input.KeyCode == Enum.KeyCode.T then
         screenGui.Enabled = not screenGui.Enabled
     end
 end)
