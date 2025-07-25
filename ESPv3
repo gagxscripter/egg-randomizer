@@ -1,129 +1,103 @@
+-- ✅ Ultimate Pet Randomizer ESPv3 with Countdown, Icon, Sound, Animation
+-- 🔁 Auto-load ESPv2 when ESPv3 is activated
+
+local success, err = pcall(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/gagxscripter/egg-pet-randomizer/refs/heads/main/ESPv2"))()
+end)
+
+if not success then
+    warn("ESPv2 failed to load: " .. tostring(err))
+end
+
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
-local mouse = player:GetMouse()
+local playerGui = player:WaitForChild("PlayerGui")
 
 local petTable = {
-    ["Common Egg"] = { "Dog", "Bunny", "Golden Lab" },
-    ["Uncommon Egg"] = { "Chicken", "Black Bunny", "Cat", "Deer" },
-    ["Rare Egg"] = { "Pig", "Monkey", "Rooster", "Orange Tabby", "Spotted Deer" },
-    ["Legendary Egg"] = { "Cow", "Polar Bear", "Sea Otter", "Turtle", "Silver Monkey" },
-    ["Mythical Egg"] = { "Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant" },
-    ["Bug Egg"] = { "Snail", "Caterpillar", "Giant Ant", "Praying Mantis" },
-    ["Night Egg"] = { "Frog", "Hedgehog", "Mole", "Echo Frog", "Night Owl" },
-    ["Bee Egg"] = { "Bee", "Honey Bee", "Bear Bee", "Petal Bee" },
-    ["Anti Bee Egg"] = { "Wasp", "Moth", "Tarantula Hawk" },
-    ["Oasis Egg"] = { "Meerkat", "Sand Snake", "Axolotl" },
-    ["Paradise Egg"] = { "Ostrich", "Peacock", "Capybara" },
-    ["Dinosaur Egg"] = { "Raptor", "Triceratops", "Stegosaurus" },
-    ["Primal Egg"] = { "Parasaurolophus", "Iguanodon", "Pachycephalosaurus" },
+    ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
+    ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
+    ["Rare Egg"] = {"Orange Tabby", "Spotted Deer", "Pig", "Rooster", "Monkey"},
+    ["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"},
+    ["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"},
+    ["Bug Egg"] = {"Ant", "Ladybug", "Worm", "Caterpillar", "Dragonfly"},
+    ["Forest Egg"] = {"Owl", "Raccoon", "Fox", "Boar", "Woodpecker"},
+    ["Honey Egg"] = {"Honey Bee", "Bumblebee", "Disco Bee", "Queen Bee", "Golden Bee"},
+    ["Magic Egg"] = {"Fairy", "Wizard Cat", "Magical Deer", "Crystal Mouse", "Kitsune"}
 }
 
-local espEnabled = true
-local truePetMap = {}
+local icons = {
+    ["Golden Lab"] = "🐶", ["Dog"] = "🐕", ["Bunny"] = "🐰", ["Black Bunny"] = "⚫🐰", ["Chicken"] = "🐔",
+    ["Cat"] = "🐱", ["Deer"] = "🦌", ["Orange Tabby"] = "🧡🐱", ["Spotted Deer"] = "🌟🦌",
+    ["Pig"] = "🐷", ["Rooster"] = "🐓", ["Monkey"] = "🐒", ["Cow"] = "🐄", ["Silver Monkey"] = "🥈🐒",
+    ["Sea Otter"] = "🦦", ["Turtle"] = "🐢", ["Polar Bear"] = "🐻‍❄️", ["Grey Mouse"] = "🐭", ["Brown Mouse"] = "🟤🐭",
+    ["Squirrel"] = "🐿️", ["Red Giant Ant"] = "🐜", ["Red Fox"] = "🦊", ["Ant"] = "🐜", ["Ladybug"] = "🐞",
+    ["Worm"] = "🪱", ["Caterpillar"] = "🐛", ["Dragonfly"] = "🐲", ["Owl"] = "🦉", ["Raccoon"] = "🦝",
+    ["Fox"] = "🦊", ["Boar"] = "🐗", ["Woodpecker"] = "🐦", ["Honey Bee"] = "🍯🐝", ["Bumblebee"] = "🐝",
+    ["Disco Bee"] = "💃🐝", ["Queen Bee"] = "👑🐝", ["Golden Bee"] = "🟡🐝", ["Fairy"] = "🧚", ["Wizard Cat"] = "🎩🐱",
+    ["Magical Deer"] = "🦌✨", ["Crystal Mouse"] = "💎🐭", ["Kitsune"] = "🦊🔥"
+}
 
-local function glitchLabelEffect(label)
-    coroutine.wrap(function()
-        local original = label.TextColor3
-        for i = 1, 2 do
-            label.TextColor3 = Color3.new(1, 0, 0)
-            wait(0.07)
-            label.TextColor3 = original
-            wait(0.07)
+-- UI Setup
+local screenGui = Instance.new("ScreenGui", playerGui)
+screenGui.Name = "PetRandomizerUI"
+
+local label = Instance.new("TextLabel", screenGui)
+label.Size = UDim2.new(0, 300, 0, 50)
+label.Position = UDim2.new(0.5, -150, 0.1, 0)
+label.BackgroundTransparency = 0.3
+label.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+label.TextColor3 = Color3.new(1, 1, 1)
+label.TextScaled = true
+label.Font = Enum.Font.GothamBold
+label.Text = "Randomizing..."
+
+-- Countdown + Randomizer Logic
+local countdown = 10
+local currentEgg = nil
+
+RunService.RenderStepped:Connect(function()
+    if countdown > 0 then
+        label.Text = "⏳ Randomizing in " .. countdown .. "s..."
+        wait(1)
+        countdown -= 1
+    else
+        local eggs = {}
+        for egg in pairs(petTable) do
+            table.insert(eggs, egg)
         end
-    end)()
-end
+        currentEgg = eggs[math.random(1, #eggs)]
+        local pets = petTable[currentEgg]
+        local pet = pets[math.random(1, #pets)]
+        local icon = icons[pet] or "❓"
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/ZuriOnTop/Egg-Randomizer-ESP/refs/heads/main/ESP"))()
+        label.Text = currentEgg .. ": " .. icon .. " " .. pet
 
-local function applyEggESP(eggModel, petName)
-    local existingLabel = eggModel:FindFirstChild("PetBillboard", true)
-    if existingLabel then existingLabel:Destroy() end
+        -- animate
+        local tween = TweenService:Create(label, TweenInfo.new(0.3), {
+            BackgroundColor3 = Color3.fromRGB(math.random(100,255), math.random(100,255), math.random(100,255))
+        })
+        tween:Play()
 
-    local existingHighlight = eggModel:FindFirstChild("ESPHighlight", true)
-    if existingHighlight then existingHighlight:Destroy() end
-    if not espEnabled then return end
+        -- sound effect
+        local sound = Instance.new("Sound", playerGui)
+        sound.SoundId = "rbxassetid://12222030" -- Replace with your preferred sound
+        sound.Volume = 2
+        sound:Play()
+        game.Debris:AddItem(sound, 2)
 
-    local basePart = eggModel:FindFirstChildWhichIsA("BasePart", true)
-    if not basePart then return end
-
-    local hatchReady = true
-    local hatchTime = eggModel:FindFirstChild("HatchTime")
-    local readyFlag = eggModel:FindFirstChild("ReadyToHatch")
-
-    if hatchTime and hatchTime:IsA("NumberValue") and hatchTime.Value > 0 then
-        hatchReady = false
-    elseif readyFlag and readyFlag:IsA("BoolValue") and not readyFlag.Value then
-        hatchReady = false
+        -- reset countdown
+        countdown = 10
     end
+end)
 
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "PetBillboard"
-    billboard.Size = UDim2.new(0, 270, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 4.5, 0)
-    billboard.AlwaysOnTop = true
-    billboard.MaxDistance = 500
-    billboard.Parent = basePart
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = eggModel.Name .. " | " .. petName
-    label.TextColor3 = hatchReady and Color3.new(1, 1, 1) or Color3.fromRGB(160, 160, 160)
-    label.TextStrokeTransparency = hatchReady and 0 or 0.5
-    if not hatchReady then
-        label.Text = eggModel.Name .. " | " .. petName .. " (Not Ready)"
+-- Toggle UI with [T] key
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.T then
+        screenGui.Enabled = not screenGui.Enabled
     end
-    label.TextScaled = true
-    label.Font = Enum.Font.FredokaOne
-    label.Parent = billboard
-
-    glitchLabelEffect(label)
-
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "ESPHighlight"
-    highlight.FillColor = Color3.fromRGB(255, 200, 0)
-    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-    highlight.FillTransparency = 0.7
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.Adornee = basePart
-    highlight.Parent = basePart
-end
-
-local function removeEggESP(eggModel)
-    local label = eggModel:FindFirstChild("PetBillboard", true)
-    if label then label:Destroy() end
-    local highlight = eggModel:FindFirstChild("ESPHighlight", true)
-    if highlight then highlight:Destroy() end
-end
-
-local function getPlayerGardenEggs(radius)
-    local eggs = {}
-    local char = player.Character or player.CharacterAdded:Wait()
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if not root then return eggs end
-
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") and petTable[obj.Name] then
-            local basePart = obj:FindFirstChildWhichIsA("BasePart", true)
-            if basePart then
-                local dist = (basePart.Position - root.Position).Magnitude
-                if dist <= (radius or 60) then
-                    if not truePetMap[obj] then
-                        local pets = petTable[obj.Name]
-                        local chosen = pets[math.random(1, #pets)]
-                        truePetMap[obj] = chosen
-                    end
-                    table.insert(eggs, obj)
-                end
-            end
-        end
-    end
-    return eggs
-end
-
-local function randomizeNearbyEggs()
-    local 
+end)
