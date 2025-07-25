@@ -1,101 +1,108 @@
--- ✅ Ultimate Pet Randomizer ESPv3 with Countdown, Icons, Sound, Animation
--- 🔁 Auto-load ESPv2
-
-pcall(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/gagxscripter/egg-pet-randomizer/refs/heads/main/ESPv2"))()
-end)
+-- ✅ Ultimate Pet Randomizer ESP v3 with v2 Activator (Clean Version)
 
 local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+local HttpService = game:GetService("HttpService")
 
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local camera = Workspace.CurrentCamera
 
--- 🐾 Egg to pet mappings
+-- 🐾 Pet mappings
 local petTable = {
-    ["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
-    ["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
-    ["Rare Egg"] = {"Orange Tabby", "Spotted Deer", "Pig", "Rooster", "Monkey"},
-    ["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"},
-    ["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"},
-    ["Bug Egg"] = {"Ant", "Ladybug", "Worm", "Caterpillar", "Dragonfly"},
-    ["Forest Egg"] = {"Owl", "Raccoon", "Fox", "Boar", "Woodpecker"},
-    ["Honey Egg"] = {"Honey Bee", "Bumblebee", "Disco Bee", "Queen Bee", "Golden Bee"},
-    ["Magic Egg"] = {"Fairy", "Wizard Cat", "Magical Deer", "Crystal Mouse", "Kitsune"}
+	["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
+	["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
+	["Rare Egg"] = {"Orange Tabby", "Spotted Deer", "Pig", "Rooster", "Monkey"},
+	["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"},
+	["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"},
+	["Bug Egg"] = {"Dragonfly", "Disco Bee", "Ant", "Ladybug"}
 }
 
--- 🖼️ Icons for each pet
-local icons = {
-    ["Golden Lab"] = "🐶", ["Dog"] = "🐕", ["Bunny"] = "🐰", ["Black Bunny"] = "⚫🐰", ["Chicken"] = "🐔",
-    ["Cat"] = "🐱", ["Deer"] = "🦌", ["Orange Tabby"] = "🧡🐱", ["Spotted Deer"] = "🌟🦌",
-    ["Pig"] = "🐷", ["Rooster"] = "🐓", ["Monkey"] = "🐒", ["Cow"] = "🐄", ["Silver Monkey"] = "🥈🐒",
-    ["Sea Otter"] = "🦦", ["Turtle"] = "🐢", ["Polar Bear"] = "🐻‍❄️", ["Grey Mouse"] = "🐭",
-    ["Brown Mouse"] = "🟤🐭", ["Squirrel"] = "🐿️", ["Red Giant Ant"] = "🐜", ["Red Fox"] = "🦊",
-    ["Ant"] = "🐜", ["Ladybug"] = "🐞", ["Worm"] = "🪱", ["Caterpillar"] = "🐛", ["Dragonfly"] = "🐲",
-    ["Owl"] = "🦉", ["Raccoon"] = "🦝", ["Fox"] = "🦊", ["Boar"] = "🐗", ["Woodpecker"] = "🐦",
-    ["Honey Bee"] = "🍯🐝", ["Bumblebee"] = "🐝", ["Disco Bee"] = "💃🐝", ["Queen Bee"] = "👑🐝",
-    ["Golden Bee"] = "🟡🐝", ["Fairy"] = "🧚", ["Wizard Cat"] = "🎩🐱", ["Magical Deer"] = "🦌✨",
-    ["Crystal Mouse"] = "💎🐭", ["Kitsune"] = "🦊🔥"
+-- 🖼️ Pet icons
+local petIcons = {
+	["Dog"] = "🐶", ["Golden Lab"] = "🐕", ["Bunny"] = "🐰",
+	["Black Bunny"] = "⬛🐰", ["Chicken"] = "🐔", ["Cat"] = "🐱", ["Deer"] = "🦌",
+	["Orange Tabby"] = "🧡🐱", ["Spotted Deer"] = "🐆🦌", ["Pig"] = "🐷", ["Rooster"] = "🐓", ["Monkey"] = "🐵",
+	["Cow"] = "🐄", ["Silver Monkey"] = "⚪🐵", ["Sea Otter"] = "🦦", ["Turtle"] = "🐢", ["Polar Bear"] = "🐻‍❄️",
+	["Grey Mouse"] = "🐭", ["Brown Mouse"] = "🟤🐭", ["Squirrel"] = "🐿️", ["Red Giant Ant"] = "🟥🐜", ["Red Fox"] = "🦊",
+	["Dragonfly"] = "🐲🪰", ["Disco Bee"] = "✨🐝", ["Ant"] = "🐜", ["Ladybug"] = "🐞"
 }
 
--- 🖥️ UI Setup
-local screenGui = Instance.new("ScreenGui", playerGui)
-screenGui.Name = "PetESPv3Gui"
-
-local label = Instance.new("TextLabel", screenGui)
-label.Size = UDim2.new(0, 350, 0, 50)
-label.Position = UDim2.new(0.5, -175, 0.05, 0)
-label.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-label.TextColor3 = Color3.new(1, 1, 1)
-label.TextScaled = true
-label.BackgroundTransparency = 0.3
-label.Font = Enum.Font.GothamBold
-label.Text = "Starting..."
-
--- 🔁 Randomizer Logic
-local countdown = 10
-local function randomize()
-    local eggNames = {}
-    for eggName in pairs(petTable) do
-        table.insert(eggNames, eggName)
-    end
-
-    local chosenEgg = eggNames[math.random(1, #eggNames)]
-    local pets = petTable[chosenEgg]
-    local pet = pets[math.random(1, #pets)]
-    local icon = icons[pet] or "❓"
-
-    label.Text = chosenEgg .. ": " .. icon .. " " .. pet
-
-    -- 🎨 Animate background
-    local newColor = Color3.fromRGB(math.random(100,255), math.random(100,255), math.random(100,255))
-    TweenService:Create(label, TweenInfo.new(0.3), {BackgroundColor3 = newColor}):Play()
-
-    -- 🔊 Sound effect
-    local sound = Instance.new("Sound", label)
-    sound.SoundId = "rbxassetid://12222030" -- Custom sound ID
-    sound.Volume = 1
-    sound:Play()
-    game.Debris:AddItem(sound, 2)
+-- 🔊 Sound
+local function playSound()
+	local sound = Instance.new("Sound", SoundService)
+	sound.SoundId = "rbxassetid://9118823102"
+	sound.Volume = 1
+	sound:Play()
+	game.Debris:AddItem(sound, 2)
 end
 
--- ⏳ Countdown loop
-spawn(function()
-    while true do
-        for i = countdown, 1, -1 do
-            label.Text = "⏳ Randomizing in " .. i .. "s..."
-            wait(1)
-        end
-        randomize()
-        wait(1)
-    end
+-- 🎯 Create ESP label
+local function createESP(egg)
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "PetESP"
+	gui.Adornee = egg
+	gui.Size = UDim2.new(0, 100, 0, 40)
+	gui.AlwaysOnTop = true
+
+	local label = Instance.new("TextLabel", gui)
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.TextScaled = true
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.Font = Enum.Font.GothamBold
+
+	gui.Parent = egg
+	return label
+end
+
+-- 🔁 Randomizer + countdown
+local function startRandomizer(egg, eggType)
+	local label = createESP(egg)
+	local countdown = 10
+
+	coroutine.wrap(function()
+		while egg:IsDescendantOf(Workspace) do
+			for i = countdown, 1, -1 do
+				label.Text = "⏳ " .. i .. "s..."
+				wait(1)
+			end
+
+			local petList = petTable[eggType]
+			if petList then
+				local pet = petList[math.random(1, #petList)]
+				local icon = petIcons[pet] or ""
+				label.Text = icon .. " " .. pet
+				playSound()
+			else
+				label.Text = "❓ Unknown"
+			end
+		end
+	end)()
+end
+
+-- 🔍 Scan eggs and attach ESP
+local function scan()
+	for _, egg in pairs(Workspace:GetDescendants()) do
+		if egg:IsA("BasePart") and petTable[egg.Name] and not egg:FindFirstChild("PetESP") then
+			startRandomizer(egg, egg.Name)
+		end
+	end
+end
+
+-- 🧠 Main loop
+RunService.RenderStepped:Connect(function()
+	scan()
 end)
 
--- ⌨️ Toggle UI with [T]
-UserInputService.InputBegan:Connect(function(input, gp)
-    if not gp and input.KeyCode == Enum.KeyCode.T then
-        screenGui.Enabled = not screenGui.Enabled
-    end
+-- ✅ Activator: Auto-load ESPv2 when v3 starts
+local success, err = pcall(function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/gagxscripter/egg-pet-randomizer/refs/heads/main/ESPv2"))()
 end)
+
+if not success then
+	warn("Failed to load ESPv2:", err)
+end
