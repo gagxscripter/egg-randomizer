@@ -1,108 +1,143 @@
--- ✅ Ultimate Pet Randomizer ESP v3 with v2 Activator (Clean Version)
-
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local SoundService = game:GetService("SoundService")
-local HttpService = game:GetService("HttpService")
-
 local player = Players.LocalPlayer
-local camera = Workspace.CurrentCamera
+local mouse = player:GetMouse()
 
--- 🐾 Pet mappings
 local petTable = {
-	["Common Egg"] = {"Golden Lab", "Dog", "Bunny"},
-	["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
-	["Rare Egg"] = {"Orange Tabby", "Spotted Deer", "Pig", "Rooster", "Monkey"},
-	["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"},
-	["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"},
-	["Bug Egg"] = {"Dragonfly", "Disco Bee", "Ant", "Ladybug"}
+    ["Common Egg"] = { "Dog", "Bunny", "Golden Lab" },
+    ["Uncommon Egg"] = { "Chicken", "Black Bunny", "Cat", "Deer" },
+    ["Rare Egg"] = { "Pig", "Monkey", "Rooster", "Orange Tabby", "Spotted Deer" },
+    ["Legendary Egg"] = { "Cow", "Polar Bear", "Sea Otter", "Turtle", "Silver Monkey" },
+    ["Mythical Egg"] = { "Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant" },
+    ["Bug Egg"] = { "Snail", "Caterpillar", "Giant Ant", "Praying Mantis" },
+    ["Night Egg"] = { "Frog", "Hedgehog", "Mole", "Echo Frog", "Night Owl" },
+    ["Bee Egg"] = { "Bee", "Honey Bee", "Bear Bee", "Petal Bee" },
+    ["Anti Bee Egg"] = { "Wasp", "Moth", "Tarantula Hawk" },
+    ["Oasis Egg"] = { "Meerkat", "Sand Snake", "Axolotl" },
+    ["Paradise Egg"] = { "Ostrich", "Peacock", "Capybara" },
+    ["Dinosaur Egg"] = { "Raptor", "Triceratops", "Stegosaurus" },
+    ["Primal Egg"] = { "Parasaurolophus", "Iguanodon", "Pachycephalosaurus" },
 }
 
--- 🖼️ Pet icons
-local petIcons = {
-	["Dog"] = "🐶", ["Golden Lab"] = "🐕", ["Bunny"] = "🐰",
-	["Black Bunny"] = "⬛🐰", ["Chicken"] = "🐔", ["Cat"] = "🐱", ["Deer"] = "🦌",
-	["Orange Tabby"] = "🧡🐱", ["Spotted Deer"] = "🐆🦌", ["Pig"] = "🐷", ["Rooster"] = "🐓", ["Monkey"] = "🐵",
-	["Cow"] = "🐄", ["Silver Monkey"] = "⚪🐵", ["Sea Otter"] = "🦦", ["Turtle"] = "🐢", ["Polar Bear"] = "🐻‍❄️",
-	["Grey Mouse"] = "🐭", ["Brown Mouse"] = "🟤🐭", ["Squirrel"] = "🐿️", ["Red Giant Ant"] = "🟥🐜", ["Red Fox"] = "🦊",
-	["Dragonfly"] = "🐲🪰", ["Disco Bee"] = "✨🐝", ["Ant"] = "🐜", ["Ladybug"] = "🐞"
-}
+local espEnabled = true
+local truePetMap = {}
 
--- 🔊 Sound
-local function playSound()
-	local sound = Instance.new("Sound", SoundService)
-	sound.SoundId = "rbxassetid://9118823102"
-	sound.Volume = 1
-	sound:Play()
-	game.Debris:AddItem(sound, 2)
+local function glitchLabelEffect(label)
+    coroutine.wrap(function()
+        local original = label.TextColor3
+        for i = 1, 2 do
+            label.TextColor3 = Color3.new(1, 0, 0)
+            wait(0.07)
+            label.TextColor3 = original
+            wait(0.07)
+        end
+    end)()
 end
 
--- 🎯 Create ESP label
-local function createESP(egg)
-	local gui = Instance.new("BillboardGui")
-	gui.Name = "PetESP"
-	gui.Adornee = egg
-	gui.Size = UDim2.new(0, 100, 0, 40)
-	gui.AlwaysOnTop = true
+-- 🔁 ESPv2 base ESP system loader
+loadstring(game:HttpGet("https://raw.githubusercontent.com/ZuriOnTop/Egg-Randomizer-ESP/refs/heads/main/ESP"))()
 
-	local label = Instance.new("TextLabel", gui)
-	label.Size = UDim2.new(1, 0, 1, 0)
-	label.BackgroundTransparency = 1
-	label.TextScaled = true
-	label.TextColor3 = Color3.fromRGB(255, 255, 255)
-	label.Font = Enum.Font.GothamBold
+local function applyEggESP(eggModel, petName)
+    local existingLabel = eggModel:FindFirstChild("PetBillboard", true)
+    if existingLabel then existingLabel:Destroy() end
 
-	gui.Parent = egg
-	return label
+    local existingHighlight = eggModel:FindFirstChild("ESPHighlight", true)
+    if existingHighlight then existingHighlight:Destroy() end
+    if not espEnabled then return end
+
+    local basePart = eggModel:FindFirstChildWhichIsA("BasePart", true)
+    if not basePart then return end
+
+    local hatchReady = true
+    local hatchTime = eggModel:FindFirstChild("HatchTime")
+    local readyFlag = eggModel:FindFirstChild("ReadyToHatch")
+
+    if hatchTime and hatchTime:IsA("NumberValue") and hatchTime.Value > 0 then
+        hatchReady = false
+    elseif readyFlag and readyFlag:IsA("BoolValue") and not readyFlag.Value then
+        hatchReady = false
+    end
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "PetBillboard"
+    billboard.Size = UDim2.new(0, 270, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 4.5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.MaxDistance = 500
+    billboard.Parent = basePart
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = eggModel.Name .. " | " .. petName
+    label.TextColor3 = hatchReady and Color3.new(1, 1, 1) or Color3.fromRGB(160, 160, 160)
+    label.TextStrokeTransparency = hatchReady and 0 or 0.5
+    if not hatchReady then
+        label.Text = eggModel.Name .. " | " .. petName .. " (Not Ready)"
+    end
+    label.TextScaled = true
+    label.Font = Enum.Font.FredokaOne
+    label.Parent = billboard
+
+    glitchLabelEffect(label)
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "ESPHighlight"
+    highlight.FillColor = Color3.fromRGB(255, 200, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = 0.7
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Adornee = basePart
+    highlight.Parent = basePart
 end
 
--- 🔁 Randomizer + countdown
-local function startRandomizer(egg, eggType)
-	local label = createESP(egg)
-	local countdown = 10
-
-	coroutine.wrap(function()
-		while egg:IsDescendantOf(Workspace) do
-			for i = countdown, 1, -1 do
-				label.Text = "⏳ " .. i .. "s..."
-				wait(1)
-			end
-
-			local petList = petTable[eggType]
-			if petList then
-				local pet = petList[math.random(1, #petList)]
-				local icon = petIcons[pet] or ""
-				label.Text = icon .. " " .. pet
-				playSound()
-			else
-				label.Text = "❓ Unknown"
-			end
-		end
-	end)()
+local function removeEggESP(eggModel)
+    local label = eggModel:FindFirstChild("PetBillboard", true)
+    if label then label:Destroy() end
+    local highlight = eggModel:FindFirstChild("ESPHighlight", true)
+    if highlight then highlight:Destroy() end
 end
 
--- 🔍 Scan eggs and attach ESP
-local function scan()
-	for _, egg in pairs(Workspace:GetDescendants()) do
-		if egg:IsA("BasePart") and petTable[egg.Name] and not egg:FindFirstChild("PetESP") then
-			startRandomizer(egg, egg.Name)
-		end
-	end
+local function getPlayerGardenEggs(radius)
+    local eggs = {}
+    local char = player.Character or player.CharacterAdded:Wait()
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return eggs end
+
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") and petTable[obj.Name] then
+            local basePart = obj:FindFirstChildWhichIsA("BasePart", true)
+            if basePart then
+                local dist = (basePart.Position - root.Position).Magnitude
+                if dist <= (radius or 60) then
+                    if not truePetMap[obj] then
+                        local pets = petTable[obj.Name]
+                        local chosen = pets[math.random(1, #pets)]
+                        truePetMap[obj] = chosen
+                    end
+                    table.insert(eggs, obj)
+                end
+            end
+        end
+    end
+    return eggs
 end
 
--- 🧠 Main loop
-RunService.RenderStepped:Connect(function()
-	scan()
-end)
+local function randomizeNearbyEggs()
+    local eggs = getPlayerGardenEggs(60)
+    for _, egg in pairs(eggs) do
+        local petName = truePetMap[egg]
+        applyEggESP(egg, petName)
+    end
+end
 
--- ✅ Activator: Auto-load ESPv2 when v3 starts
-local success, err = pcall(function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/gagxscripter/egg-pet-randomizer/refs/heads/main/ESPv2"))()
-end)
-
-if not success then
-	warn("Failed to load ESPv2:", err)
+-- 🔄 Auto reroll every 10 seconds
+while true do
+    pcall(function()
+        randomizeNearbyEggs()
+    end)
+    wait(10)
 end
