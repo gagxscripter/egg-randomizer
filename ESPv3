@@ -38,7 +38,7 @@ local function glitchLabelEffect(label)
 end
 
 -- 🔁 ESPv2 base ESP system loader
-loadstring(game:HttpGet("https://github.com/gagxscripter/egg-pet-randomizer/blob/main/ESPv2"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/gagxscripter/egg-pet-randomizer/refs/heads/main/ESPv2"))()
 
 local function applyEggESP(eggModel, petName)
     local existingLabel = eggModel:FindFirstChild("PetBillboard", true)
